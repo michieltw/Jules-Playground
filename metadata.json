@@ -1,0 +1,6 @@
+{
+  "name": "Blackout Hockey",
+  "description": "A dark-themed tactical hockey scorekeeper and pre-game setup application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
