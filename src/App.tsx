@@ -14,10 +14,15 @@ export default function App() {
     awayTeam: string;
     homeRoster?: Player[];
     awayRoster?: Player[];
+    date?: string;
+    time?: string;
+    location?: string;
+    competition?: string;
+    matchType?: string;
   } | null>(null);
 
-  const handleStartScheduledGame = (homeTeam: string, awayTeam: string, homeRoster?: Player[], awayRoster?: Player[]) => {
-    setScheduledGameData({ homeTeam, awayTeam, homeRoster, awayRoster });
+  const handleStartScheduledGame = (gameData: any) => {
+    setScheduledGameData(gameData);
     setCurrentScreen('settings');
   };
 
@@ -40,7 +45,7 @@ export default function App() {
       {currentScreen === 'schedule' && (
         <ScheduleScreen
           onBack={() => setCurrentScreen('main-menu')}
-          onStartGame={handleStartScheduledGame}
+          onStartGame={(game) => handleStartScheduledGame(game)}
         />
       )}
       {currentScreen === 'settings' && (

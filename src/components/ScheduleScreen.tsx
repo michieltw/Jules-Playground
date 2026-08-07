@@ -5,7 +5,7 @@ import RosterModal from './RosterModal';
 
 interface ScheduleScreenProps {
   onBack: () => void;
-  onStartGame?: (homeTeam: string, awayTeam: string, homeRoster?: Player[], awayRoster?: Player[]) => void;
+  onStartGame?: (gameData: any) => void;
 }
 
 const COMPETITIONS = [
@@ -27,37 +27,7 @@ const MATCH_TYPES = [
   'Toernooi'
 ];
 
-const DEFAULT_GAMES: ScheduledGame[] = [
-  {
-    id: '1',
-    homeTeam: 'Home Team',
-    awayTeam: 'Away Team',
-    date: '2026-08-12',
-    time: '20:00',
-    location: 'Scotiabank Arena',
-    competition: 'NHL',
-    matchType: 'Reguliere Competitie',
-    homeRoster: [
-      { id: '1', number: '#34', name: 'Auston Matthews', position: 'Aanvaller (F)' },
-      { id: '2', number: '#16', name: 'Mitch Marner', position: 'Aanvaller (F)' },
-      { id: '3', number: '#88', name: 'William Nylander', position: 'Aanvaller (F)' }
-    ],
-    awayRoster: [
-      { id: '4', number: '#14', name: 'Nick Suzuki', position: 'Aanvaller (F)' },
-      { id: '5', number: '#22', name: 'Cole Caufield', position: 'Aanvaller (F)' }
-    ]
-  },
-  {
-    id: '2',
-    homeTeam: 'BOSTON (BOS)',
-    awayTeam: 'NEW YORK (NYR)',
-    date: '2026-08-15',
-    time: '19:30',
-    location: 'TD Garden',
-    competition: 'NHL',
-    matchType: 'Play-offs'
-  }
-];
+const DEFAULT_GAMES: ScheduledGame[] = [];
 
 export default function ScheduleScreen({ onBack, onStartGame }: ScheduleScreenProps) {
   const [games, setGames] = useState<ScheduledGame[]>(() => {
@@ -72,11 +42,11 @@ export default function ScheduleScreen({ onBack, onStartGame }: ScheduleScreenPr
     return DEFAULT_GAMES;
   });
 
-  const [homeTeam, setHomeTeam] = useState('Home Team');
-  const [awayTeam, setAwayTeam] = useState('Away Team');
+  const [homeTeam, setHomeTeam] = useState('');
+  const [awayTeam, setAwayTeam] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState('20:00');
-  const [location, setLocation] = useState('Home Rink');
+  const [time, setTime] = useState('');
+  const [location, setLocation] = useState('');
   const [competition, setCompetition] = useState(COMPETITIONS[0]);
   const [matchType, setMatchType] = useState(MATCH_TYPES[0]);
 
@@ -430,7 +400,7 @@ export default function ScheduleScreen({ onBack, onStartGame }: ScheduleScreenPr
                   <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                     {onStartGame && (
                       <button
-                        onClick={() => onStartGame(game.homeTeam, game.awayTeam, game.homeRoster, game.awayRoster)}
+                        onClick={() => onStartGame(game)}
                         className="bg-surface-container-high hover:bg-tertiary hover:text-black text-tertiary border border-tertiary/40 font-display font-bold px-3.5 py-2 rounded-lg text-xs transition-all active:scale-95"
                       >
                         Start Scorekeeping

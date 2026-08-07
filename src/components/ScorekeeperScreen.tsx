@@ -30,7 +30,6 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
       periodFormat: 'P1 P2 P3 OT SO',
       shootout: true,
       soRules: 'NHL',
-      trackSOGType: false,
       trackSOGLocation: false,
       trackFOW: true,
       faceoffLocation: true,
@@ -44,7 +43,6 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
       venueMode: 'Custom',
       capacity: 0,
       avgPrice: 0,
-      soundEffects: false,
       haptics: false,
       stayAwake: false,
       autosave: false,
@@ -110,8 +108,14 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
             .map(p => ({ ...p, secondsRemaining: p.secondsRemaining - 1 }))
             .filter(p => p.secondsRemaining > 0);
 
+          let newIsRunning = prev.isRunning;
+          if (newTime === 0 && config.settings?.autoStopAtPeriodEnd === 'Yes') {
+             newIsRunning = false;
+          }
+
           return {
             ...prev,
+            isRunning: newIsRunning,
             timeRemaining: newTime,
             activePenalties: updatedPenalties
           };
@@ -254,6 +258,10 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
       scoreAway: data.team === 'away' ? prev.scoreAway + 1 : prev.scoreAway,
     }));
     showToast(`Doelpunt ${realTeam} geregistreerd!`);
+
+    if (config.settings?.haptics && "vibrate" in navigator) {
+      navigator.vibrate([200, 100, 200]);
+    }
   };
 
   const handlePenaltySubmit = (data: { team: 'home' | 'away'; player: string; reason: string; minutes: number }) => {
@@ -293,6 +301,10 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
       activePenalties: [...(prev.activePenalties || []), newActivePenalty]
     }));
     showToast(`Straf ${realTeam} geregistreerd!`);
+
+    if (config.settings?.haptics && "vibrate" in navigator) {
+      navigator.vibrate([300]);
+    }
   };
 
   const handleFinishGame = () => {
@@ -373,6 +385,8 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
         awayTeam={config.awayTeam}
         homeColor={config.homeColor}
         awayColor={config.awayColor}
+        homeLogo={config.homeLogo}
+        awayLogo={config.awayLogo}
         trackPenalties={config.settings?.trackPenalties}
         onAdjustTime={(seconds: number) => {
           setGameState(prev => ({
@@ -458,6 +472,15 @@ export default function ScorekeeperScreen({ onBack }: { onBack: () => void }) {
         awayTeam={config.awayTeam}
         homeColor={config.homeColor}
         awayColor={config.awayColor}
+        homeLogo={config.homeLogo}
+        awayLogo={config.awayLogo}
+        location={config.location}
+        competition={config.competition}
+        matchType={config.matchType}
+        officials={config.officials}
+        linesmen={config.linesmen}
+        date={config.date}
+        time={config.time}
         settings={config.settings}
       />
     </div>

@@ -9,6 +9,13 @@ interface SettingsScreenProps {
     awayTeam: string;
     homeRoster?: Player[];
     awayRoster?: Player[];
+    date?: string;
+    time?: string;
+    location?: string;
+    competition?: string;
+    matchType?: string;
+    officials?: string[];
+    linesmen?: string[];
   } | null;
   onStart: () => void;
   onBack: () => void;
@@ -61,27 +68,18 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
   const [gameSettingsMode, setGameSettingsMode] = useState<string>(scheduledGameData ? 'Custom' : 'Default');
   const isDefault = gameSettingsMode === 'Default';
 
-  const [homeTeam, setHomeTeam] = useState(scheduledGameData?.homeTeam || 'Home Team');
-  const [awayTeam, setAwayTeam] = useState(scheduledGameData?.awayTeam || 'Away Team');
+  const [homeTeam, setHomeTeam] = useState(scheduledGameData?.homeTeam || '');
+  const [awayTeam, setAwayTeam] = useState(scheduledGameData?.awayTeam || '');
 
   const [homeColor, setHomeColor] = useState('#00205B');
   const [awayColor, setAwayColor] = useState('#AF1E2D');
 
-  const [homeRoster, setHomeRoster] = useState<Player[]>(scheduledGameData?.homeRoster || [
-    { id: '1', number: '#34', name: 'A. Matthews', position: 'Aanvaller (F)' },
-    { id: '2', number: '#16', name: 'M. Marner', position: 'Aanvaller (F)' },
-    { id: '3', number: '#88', name: 'W. Nylander', position: 'Aanvaller (F)' },
-    { id: '4', number: '#44', name: 'M. Rielly', position: 'Verdediger (D)' },
-    { id: '5', number: '#35', name: 'I. Samsonov', position: 'Goalie (G)' },
-  ]);
+  const [homeLogo, setHomeLogo] = useState('');
+  const [awayLogo, setAwayLogo] = useState('');
 
-  const [awayRoster, setAwayRoster] = useState<Player[]>(scheduledGameData?.awayRoster || [
-    { id: '1', number: '#22', name: 'C. Caufield', position: 'Aanvaller (F)' },
-    { id: '2', number: '#14', name: 'N. Suzuki', position: 'Aanvaller (F)' },
-    { id: '3', number: '#20', name: 'J. Slafkovsky', position: 'Aanvaller (F)' },
-    { id: '4', number: '#8', name: 'M. Matheson', position: 'Verdediger (D)' },
-    { id: '5', number: '#35', name: 'S. Montembeault', position: 'Goalie (G)' },
-  ]);
+  const [homeRoster, setHomeRoster] = useState<Player[]>(scheduledGameData?.homeRoster || []);
+
+  const [awayRoster, setAwayRoster] = useState<Player[]>(scheduledGameData?.awayRoster || []);
 
   const [activeRosterModal, setActiveRosterModal] = useState<{ isHome: boolean } | null>(null);
 
@@ -92,13 +90,12 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
 
   const [officialGame, setOfficialGame] = useState(true);
   const [gameType, setGameType] = useState('League');
-  const [attendance, setAttendance] = useState(18800);
-  const [ticketsSold, setTicketsSold] = useState(18800);
+  const [attendance, setAttendance] = useState(0);
+  const [ticketsSold, setTicketsSold] = useState(0);
 
   const [liveGame, setLiveGame] = useState(true);
-  const [teamSelection, setTeamSelection] = useState('Choose from list');
+  const [teamSelection, setTeamSelection] = useState('Custom');
   const [allowFillInPlayers, setAllowFillInPlayers] = useState(false);
-  const [gameId, setGameId] = useState('G-10294');
 
   const [gameClock, setGameClock] = useState(true);
   const [clockPauseBehavior, setClockPauseBehavior] = useState('Freeze Clock');
@@ -107,7 +104,6 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
   const [shootout, setShootout] = useState(true);
   const [soRules, setSoRules] = useState('NHL');
 
-  const [trackSOGType, setTrackSOGType] = useState(false);
   const [trackSOGLocation, setTrackSOGLocation] = useState(false);
   const [trackFOW, setTrackFOW] = useState(true);
   const [faceoffLocation, setFaceoffLocation] = useState(true);
@@ -118,14 +114,16 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
   const [penaltyClock, setPenaltyClock] = useState('Continuous');
   const [durationTypes, setDurationTypes] = useState('Standard');
 
-  const [officialsMode, setOfficialsMode] = useState('List');
-  const [linesmenMode, setLinesmenMode] = useState('List');
-  const [venueMode, setVenueMode] = useState('Scotiabank Arena');
-  const [capacity, setCapacity] = useState(18800);
-  const [avgPrice, setAvgPrice] = useState(150);
+  const [officialsMode, setOfficialsMode] = useState(scheduledGameData?.officials ? 'Custom' : 'List');
+  const [linesmenMode, setLinesmenMode] = useState(scheduledGameData?.linesmen ? 'Custom' : 'List');
+  const [venueMode, setVenueMode] = useState(scheduledGameData?.location ? 'Custom' : 'Scotiabank Arena');
+  const [customVenue, setCustomVenue] = useState(scheduledGameData?.location || '');
+  const [customOfficials, setCustomOfficials] = useState(scheduledGameData?.officials?.join(', ') || '');
+  const [customLinesmen, setCustomLinesmen] = useState(scheduledGameData?.linesmen?.join(', ') || '');
 
-  const [uploadToCloud, setUploadToCloud] = useState(true);
-  const [syncToLeagueDB, setSyncToLeagueDB] = useState(true);
+  const [capacity, setCapacity] = useState(0);
+  const [avgPrice, setAvgPrice] = useState(0);
+
   const [localBackup, setLocalBackup] = useState(true);
 
   // Load defaults if any
@@ -154,7 +152,6 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
         if (defaults.shootout !== undefined) setShootout(defaults.shootout);
         if (defaults.soRules) setSoRules(defaults.soRules);
 
-        if (defaults.trackSOGType !== undefined) setTrackSOGType(defaults.trackSOGType);
         if (defaults.trackSOGLocation !== undefined) setTrackSOGLocation(defaults.trackSOGLocation);
         if (defaults.trackFOW !== undefined) setTrackFOW(defaults.trackFOW);
         if (defaults.faceoffLocation !== undefined) setFaceoffLocation(defaults.faceoffLocation);
@@ -180,8 +177,17 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
       awayTeam,
       homeColor,
       awayColor,
+      homeLogo,
+      awayLogo,
       homeRoster,
       awayRoster,
+      date: scheduledGameData?.date || new Date().toISOString().split('T')[0],
+      time: scheduledGameData?.time || '20:00',
+      location: venueMode === 'Custom' ? customVenue : venueMode,
+      competition: scheduledGameData?.competition || '',
+      matchType: scheduledGameData?.matchType || '',
+      officials: officialsMode === 'Custom' ? customOfficials.split(',').map(s => s.trim()) : [],
+      linesmen: linesmenMode === 'Custom' ? customLinesmen.split(',').map(s => s.trim()) : [],
       settings: {
         periodLength: periodLength * 60,
         trackIcing,
@@ -200,7 +206,6 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
         periodFormat,
         shootout,
         soRules,
-        trackSOGType,
         trackSOGLocation,
         trackFOW,
         faceoffLocation,
@@ -214,7 +219,6 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
         venueMode,
         capacity,
         avgPrice,
-        soundEffects: true, // not used here
         haptics: true,
         stayAwake: true,
         autosave: true,
@@ -254,9 +258,6 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
             />
           </Row>
           {!isDefault && <Row label="Official Game"><Toggle checked={officialGame} onChange={() => setOfficialGame(!officialGame)} /></Row>}
-          <Row label="Game ID" border={!isDefault} disabled={!officialGame}>
-            <input disabled={!officialGame} className={`bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-[16px] outline-none input-focus w-32 text-right ${!officialGame ? 'opacity-50 cursor-not-allowed' : ''}`} type="text" value={gameId} onChange={(e) => setGameId(e.target.value)} />
-          </Row>
           {!isDefault && <Row label="Game Type" disabled={!officialGame}><Select disabled={!officialGame} options={['League', 'Tournament', 'Friendly']} value={gameType} onChange={(e) => setGameType(e.target.value)} className="w-40" /></Row>}
           {!isDefault && <Row label="Live Game" border={false}><Toggle checked={liveGame} onChange={() => setLiveGame(!liveGame)} /></Row>}
         </Section>
@@ -266,11 +267,7 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
           <>
             {/* Teams & Roster */}
             <Section title="TEAMS & ROSTER">
-              <div className="flex items-center gap-2 mb-2">
-                <input defaultChecked className="rounded bg-[#050505] border-[#2A2A2A] text-tertiary focus:ring-tertiary w-4 h-4" type="checkbox" />
-                <label className="text-[16px] text-on-surface-variant">Auto populate fields</label>
-              </div>
-              <Row label="Team Selection"><Select options={['Choose from list', 'Custom']} value={teamSelection} onChange={(e) => setTeamSelection(e.target.value)} className="w-48" /></Row>
+              <Row label="Team Selection"><Select options={['Custom', 'Choose from list']} value={teamSelection} onChange={(e) => setTeamSelection(e.target.value)} className="w-48" /></Row>
               <Row label="Allow Fill-in Players"><Toggle checked={allowFillInPlayers} onChange={() => setAllowFillInPlayers(!allowFillInPlayers)} /></Row>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -284,7 +281,7 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
                   )}
                   <div className="flex gap-2 items-center mt-2">
                     <input type="color" className="w-8 h-8 rounded p-0 border-0 bg-transparent shrink-0 cursor-pointer" value={homeColor} onChange={(e) => setHomeColor(e.target.value)} />
-                    <input className="flex-1 bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-sm outline-none input-focus" placeholder="Logo URL" type="text" defaultValue="/logos/tor.png" />
+                    <input className="flex-1 bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-sm outline-none input-focus" placeholder="Logo URL" type="text" value={homeLogo} onChange={(e) => setHomeLogo(e.target.value)} />
                   </div>
                   <button
                     onClick={() => setActiveRosterModal({ isHome: true })}
@@ -309,7 +306,7 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
                   )}
                   <div className="flex gap-2 items-center mt-2">
                     <input type="color" className="w-8 h-8 rounded p-0 border-0 bg-transparent shrink-0 cursor-pointer" value={awayColor} onChange={(e) => setAwayColor(e.target.value)} />
-                    <input className="flex-1 bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-sm outline-none input-focus" placeholder="Logo URL" type="text" defaultValue="/logos/mtl.png" />
+                    <input className="flex-1 bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-sm outline-none input-focus" placeholder="Logo URL" type="text" value={awayLogo} onChange={(e) => setAwayLogo(e.target.value)} />
                   </div>
                   <button
                     onClick={() => setActiveRosterModal({ isHome: false })}
@@ -355,11 +352,9 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
                   const newVal = !trackSOG;
                   setTrackSOG(newVal);
                   if (!newVal) {
-                    setTrackSOGType(false);
                     setTrackSOGLocation(false);
                   }
                 }} /></Row>
-                <Row label="SOG Type" disabled={!trackSOG}><Toggle disabled={!trackSOG} checked={trackSOGType && trackSOG} onChange={() => setTrackSOGType(!trackSOGType)} /></Row>
                 <Row label="SOG Location" disabled={!trackSOG}><Toggle disabled={!trackSOG} checked={trackSOGLocation && trackSOG} onChange={() => setTrackSOGLocation(!trackSOGLocation)} /></Row>
                 <Row label="FOW"><Toggle checked={trackFOW} onChange={() => {
                   const newVal = !trackFOW;
@@ -400,8 +395,23 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
             {/* Officials & Venue */}
             <Section title="OFFICIALS & VENUE">
               <Row label="Game Officials (2x)"><Select options={['List', 'Custom']} value={officialsMode} onChange={(e) => setOfficialsMode(e.target.value)} className="w-40" /></Row>
+              {officialsMode === 'Custom' && (
+                <div className="flex flex-col gap-1 -mt-2">
+                  <input className="w-full bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-[16px] input-focus outline-none" type="text" placeholder="Naam 1, Naam 2" value={customOfficials} onChange={(e) => setCustomOfficials(e.target.value)} />
+                </div>
+              )}
               <Row label="Linesmen (2x)"><Select options={['List', 'Custom']} value={linesmenMode} onChange={(e) => setLinesmenMode(e.target.value)} className="w-40" /></Row>
+              {linesmenMode === 'Custom' && (
+                <div className="flex flex-col gap-1 -mt-2">
+                  <input className="w-full bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-[16px] input-focus outline-none" type="text" placeholder="Naam 1, Naam 2" value={customLinesmen} onChange={(e) => setCustomLinesmen(e.target.value)} />
+                </div>
+              )}
               <Row label="Venue"><Select options={['Scotiabank Arena', 'Custom']} value={venueMode} onChange={(e) => setVenueMode(e.target.value)} className="w-48" /></Row>
+              {venueMode === 'Custom' && (
+                <div className="flex flex-col gap-1 -mt-2">
+                  <input className="w-full bg-[#050505] border border-[#2A2A2A] rounded p-2 text-on-background text-[16px] input-focus outline-none" type="text" placeholder="Arena Naam" value={customVenue} onChange={(e) => setCustomVenue(e.target.value)} />
+                </div>
+              )}
               <div className={`grid grid-cols-2 gap-4 py-2 ${!officialGame ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="flex flex-col gap-1">
                   <label className="font-mono text-[10px] font-bold text-on-surface-variant uppercase">Capacity</label>
@@ -426,12 +436,6 @@ export default function SettingsScreen({ scheduledGameData, onStart, onBack }: S
             <section className="flex flex-col gap-4">
               <h2 className="font-mono text-[12px] font-bold text-tertiary tracking-widest uppercase">SYSTEM</h2>
               <div className="bg-surface-container-low metallic-border rounded-lg p-4 inner-glow flex flex-col gap-2">
-                <Row label="Upload to Cloud"><Toggle checked={uploadToCloud} onChange={() => {
-                  const newVal = !uploadToCloud;
-                  setUploadToCloud(newVal);
-                  if (!newVal) setSyncToLeagueDB(false);
-                }} /></Row>
-                <Row label="Sync to League DB" disabled={!uploadToCloud}><Toggle disabled={!uploadToCloud} checked={syncToLeagueDB && uploadToCloud} onChange={() => setSyncToLeagueDB(!syncToLeagueDB)} /></Row>
                 <Row label="Local Backup" border={false}><Toggle checked={localBackup} onChange={() => setLocalBackup(!localBackup)} /></Row>
               </div>
             </section>

@@ -10,12 +10,16 @@ interface ScoreHeaderProps {
   awayTeam: string;
   homeColor?: string;
   awayColor?: string;
+  homeLogo?: string;
+  awayLogo?: string;
   trackPenalties?: boolean;
   onAdjustTime?: (seconds: number) => void;
 }
 
-export default function ScoreHeader({ gameState, formatTime, onBack, homeTeam, awayTeam, homeColor = '#00205B', awayColor = '#AF1E2D', trackPenalties = true, onAdjustTime }: ScoreHeaderProps) {
+export default function ScoreHeader({ gameState, formatTime, onBack, homeTeam, awayTeam, homeColor = '#00205B', awayColor = '#AF1E2D', homeLogo, awayLogo, trackPenalties = true, onAdjustTime }: ScoreHeaderProps) {
   const [startY, setStartY] = useState<number | null>(null);
+  const [homeLogoError, setHomeLogoError] = useState(false);
+  const [awayLogoError, setAwayLogoError] = useState(false);
 
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
     if ('touches' in e) {
@@ -66,8 +70,14 @@ export default function ScoreHeader({ gameState, formatTime, onBack, homeTeam, a
         {/* Team 1: Home */}
         <div className="flex items-center gap-3 w-1/3">
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-1 overflow-hidden shrink-0 border-2 border-white/20 shadow-lg" style={{ backgroundColor: homeColor }}>
-              <PawPrint className="text-white w-7 h-7 drop-shadow-md" fill="currentColor" />
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-1 overflow-hidden shrink-0 border-2 border-white/20 shadow-lg bg-[#222]">
+              {homeLogo && !homeLogoError ? (
+                <img src={homeLogo} alt={homeTeam} className="w-full h-full object-cover" onError={() => setHomeLogoError(true)} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: homeColor }}>
+                  <PawPrint className="text-white w-7 h-7 drop-shadow-md" fill="currentColor" />
+                </div>
+              )}
             </div>
             <span className="font-bold text-lg" style={{ color: homeColor }}>{homeTeam}</span>
           </div>
@@ -104,8 +114,14 @@ export default function ScoreHeader({ gameState, formatTime, onBack, homeTeam, a
             <div className="text-[10px] text-gray-400 font-bold mt-1">SOG: <span>{gameState.sogAway}</span></div>
           </div>
           <div className="flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-1 overflow-hidden shrink-0 border-2 border-white/20 shadow-lg" style={{ backgroundColor: awayColor }}>
-              <Cat className="text-white w-7 h-7 drop-shadow-md" fill="currentColor" />
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-1 overflow-hidden shrink-0 border-2 border-white/20 shadow-lg bg-[#222]">
+              {awayLogo && !awayLogoError ? (
+                <img src={awayLogo} alt={awayTeam} className="w-full h-full object-cover" onError={() => setAwayLogoError(true)} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: awayColor }}>
+                  <Cat className="text-white w-7 h-7 drop-shadow-md" fill="currentColor" />
+                </div>
+              )}
             </div>
             <span className="font-bold text-lg" style={{ color: awayColor }}>{awayTeam}</span>
           </div>
