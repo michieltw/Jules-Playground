@@ -12,6 +12,15 @@ interface GameSummaryModalProps {
   awayTeam?: string;
   homeColor?: string;
   awayColor?: string;
+  homeLogo?: string;
+  awayLogo?: string;
+  location?: string;
+  competition?: string;
+  matchType?: string;
+  officials?: string[];
+  linesmen?: string[];
+  date?: string;
+  time?: string;
   settings?: GameSettings;
 }
 
@@ -23,8 +32,17 @@ export default function GameSummaryModal({
   onFinishGame,
   homeTeam = 'Home',
   awayTeam = 'Away',
-  homeColor = '#3b82f6', // blue-500 fallback
-  awayColor = '#ef4444', // red-500 fallback
+  homeColor = '#3b82f6',
+  awayColor = '#ef4444',
+  homeLogo,
+  awayLogo,
+  location,
+  competition,
+  matchType,
+  officials,
+  linesmen,
+  date,
+  time,
   settings
 }: GameSummaryModalProps) {
   const [events, setEvents] = useState<GameEvent[]>(gameState.events);
@@ -49,13 +67,16 @@ export default function GameSummaryModal({
     let csvContent = `Match Date,Home Team,Away Team,Home Score,Away Score,Home SOG,Away SOG\n`;
     csvContent += `"${now}","${homeTeam}","${awayTeam}",${gameState.scoreHome},${gameState.scoreAway},${gameState.sogHome},${gameState.sogAway}\n\n`;
 
-    if (settings) {
-      csvContent += `Game Details\n`;
-      if (settings.venueMode) csvContent += `Venue,"${settings.venueMode}"\n`;
-      if (settings.attendance) csvContent += `Attendance,${settings.attendance}\n`;
-      if (settings.gameType) csvContent += `Game Type,"${settings.gameType}"\n`;
-      csvContent += `\n`;
-    }
+    csvContent += `Game Details\n`;
+    if (date) csvContent += `Date,"${date}"\n`;
+    if (time) csvContent += `Time,"${time}"\n`;
+    if (location) csvContent += `Location,"${location}"\n`;
+    if (competition) csvContent += `Competition,"${competition}"\n`;
+    if (matchType) csvContent += `Match Type,"${matchType}"\n`;
+    if (settings?.attendance) csvContent += `Attendance,${settings.attendance}\n`;
+    if (officials && officials.length > 0) csvContent += `Officials,"${officials.join(', ')}"\n`;
+    if (linesmen && linesmen.length > 0) csvContent += `Linesmen,"${linesmen.join(', ')}"\n`;
+    csvContent += `\n`;
 
     csvContent += `Timestamp,Event Type,Team,Description,X Coord,Y Coord\n`;
 
@@ -95,28 +116,32 @@ export default function GameSummaryModal({
 
         <div className="flex-1 overflow-y-auto pr-1 space-y-6">
           {/* Game Details Banner */}
-          {settings && (
-            <div className="flex flex-wrap gap-4 bg-[#181818] rounded-xl p-3 text-xs font-mono text-gray-400 border border-[#2a2a2a]">
-              {settings.venueMode && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-gray-500" />
-                  <span>{settings.venueMode}</span>
-                </div>
-              )}
-              {settings.attendance > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-gray-500" />
-                  <span>{settings.attendance.toLocaleString()} Toeschouwers</span>
-                </div>
-              )}
-              {settings.gameType && (
-                <div className="flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-gray-500" />
-                  <span>{settings.gameType}</span>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-4 bg-[#181818] rounded-xl p-3 text-xs font-mono text-gray-400 border border-[#2a2a2a]">
+            {location && (
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-gray-500" />
+                <span>{location}</span>
+              </div>
+            )}
+            {settings?.attendance ? (
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-gray-500" />
+                <span>{settings.attendance.toLocaleString()} Toeschouwers</span>
+              </div>
+            ) : null}
+            {competition && (
+              <div className="flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-gray-500" />
+                <span>{competition}</span>
+              </div>
+            )}
+            {matchType && (
+              <div className="flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-gray-500" />
+                <span>{matchType}</span>
+              </div>
+            )}
+          </div>
           {/* Match Score Card */}
           <div className="bg-[#121212] border border-[#2a2a2a] rounded-xl p-4 flex items-center justify-around text-center shadow-inner">
             {/* Home */}

@@ -42,7 +42,6 @@ export interface GameSettings {
   shootout: boolean;
   soRules: string;
 
-  trackSOGType: boolean;
   trackSOGLocation: boolean;
   trackFOW: boolean;
   faceoffLocation: boolean;
@@ -59,7 +58,6 @@ export interface GameSettings {
   capacity: number;
   avgPrice: number;
 
-  soundEffects: boolean;
   haptics: boolean;
   stayAwake: boolean;
   autosave: boolean;
@@ -72,8 +70,17 @@ export interface GameConfig {
   awayTeam: string;
   homeColor?: string;
   awayColor?: string;
+  homeLogo?: string;
+  awayLogo?: string;
   homeRoster?: Player[];
   awayRoster?: Player[];
+  date?: string;
+  time?: string;
+  location?: string;
+  competition?: string;
+  matchType?: string;
+  officials?: string[];
+  linesmen?: string[];
   settings: GameSettings;
 }
 
