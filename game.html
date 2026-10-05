@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HockeystickPhysics_V2 - Standalone Physics Workbench & 3D Flex Simulatie</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020617;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #f8fafc;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      cursor: grab;
+      z-index: 1;
+    }
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .badge-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      padding: 8px 16px;
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+      pointer-events: auto;
+    }
+    .badge-card h1 {
+      font-size: 14px;
+      font-weight: 900;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-card p {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+    .btn-action {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+    .btn-action:hover {
+      background: rgba(30, 41, 59, 0.95);
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+
+    /* Live Ticker Bar */
+    .ticker-bar {
+      position: absolute;
+      top: 68px;
+      left: 16px;
+      right: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .ticker-item {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(30, 41, 59, 0.9);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      pointer-events: auto;
+    }
+    .ticker-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .ticker-value {
+      font-size: 12px;
+      font-family: monospace;
+      font-weight: 900;
+      color: #38bdf8;
+    }
+
+    /* Floating Workbench Control Panel */
+    .workbench-panel {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 440px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 160px);
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(20px);
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .workbench-panel.collapsed {
+      transform: translateY(calc(100% - 46px));
+    }
+    .panel-header {
+      padding: 10px 16px;
+      background: rgba(2, 6, 23, 0.7);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .panel-header h2 {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .panel-body {
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .panel-body::-webkit-scrollbar {
+      width: 6px;
+    }
+    .panel-body::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 3px;
+    }
+
+    /* Control Groups */
+    .control-group {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid rgba(30, 41, 59, 0.8);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .group-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .group-title.amber {
+      color: #f59e0b;
+    }
+    .group-title.sky {
+      color: #38bdf8;
+    }
+
+    /* Param Row */
+    .param-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .param-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .param-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .param-slider {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+      accent-color: #38bdf8;
+    }
+    .param-slider.amber {
+      accent-color: #f59e0b;
+    }
+    .param-num {
+      width: 64px;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 3px 6px;
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 700;
+      color: #38bdf8;
+      text-align: right;
+      outline: none;
+    }
+    .param-num:focus {
+      border-color: #38bdf8;
+    }
+    .param-unit {
+      font-size: 10px;
+      color: #64748b;
+      min-width: 24px;
+    }
+
+    /* Buttons */
+    .btn-toggle {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-toggle.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .btn-play {
+      background: #0284c7;
+      border: none;
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+      transition: all 0.15s ease;
+    }
+    .btn-play:hover {
+      background: #0369a1;
+    }
+
+    .stiffness-editor {
+      width: 100%;
+      height: 180px;
+      display: block;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #020617;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .stiffness-help {
+      font-size: 10px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Quick jump buttons */
+    .quick-jumps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .btn-jump {
+      background: #020617;
+      border: 1px solid #1e293b;
+      color: #94a3b8;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .btn-jump:hover {
+      background: #1e293b;
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+    .btn-jump.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 100;
+      transition: opacity 0.4s ease;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(56, 189, 248, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.160.0",
+        "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div style="font-weight: 800; font-size: 13px; letter-spacing: 0.05em; color: #f8fafc;">3D MODEL &amp; PHYSICS WORKBENCH LADEN...</div>
+    <div style="font-size: 11px; color: #64748b;">Euler-Bernoulli Schachtflexie &amp; Fulcrum Release</div>
+  </div>
+
+  <div class="top-bar">
+    <div class="badge-card">
+      <h1>
+        <span>🏒</span> HockeystickPhysics_V2 Standalone
+        <span style="font-size: 9px; padding: 2px 6px; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 4px; color: #38bdf8;">WORKBENCH EDITIE</span>
+      </h1>
+      <p>3D Carbon Model • Euler-Bernoulli Forehand Bow • Fulcrum Release vanaf 600 ms</p>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn-action" id="btnResetAll" title="Herstel standaardwaarden">
+        ↺ Herstel
+      </button>
+      <a href="https://raw.githubusercontent.com/michieltw/GLB-s/main/glb_files_retextured/P28-ST.glb" download="HockeystickModel_P28.glb" target="_blank" class="btn-action" title="Download raw 3D GLB model">
+        📦 GLB Model
+      </a>
+    </div>
+  </div>
+
+  <!-- Live Physics Ticker -->
+  <div class="ticker-bar">
+    <div class="ticker-item">
+      <span class="ticker-label">Schot Fase:</span>
+      <span class="ticker-value" id="tickPhase">Opbouw (0-600 ms)</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-label">Schacht Buiging:</span>
+      <span class="ticker-value" id="tickBend">35.0°</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-label">Blad Verplaatsing:</span>
+      <span class="ticker-value" id="tickBlade">Op ijs (0 mm)</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-label">Tophand Trekking:</span>
+      <span class="ticker-value" id="tickTop">Gefixeerd</span>
+    </div>
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <div id="score-overlay" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 32px; font-weight: bold; color: #fff; z-index: 10; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: flex; gap: 40px; pointer-events: none;">
+    <div>Score: <span id="score-val">0</span></div>
+    <div>Shots: <span id="shots-val">0</span></div>
+  </div>
+
+  <!-- Floating Workbench Controls Panel -->
+  <div class="workbench-panel" id="workbenchPanel">
+    <div class="panel-header" id="panelHeader">
+      <h2>⚙ Physics Experiment Parameters</h2>
+      <span id="collapseIcon" style="font-size: 11px; color: #94a3b8;">▼ Inklappen</span>
+    </div>
+
+    <div class="panel-body">
+      <!-- Shaft force controls -->
+      <div class="control-group">
+        <div class="group-title sky">
+          <span>1. Schacht &amp; Fulcrum Geometrie</span>
+          <span>1400 mm</span>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Onderhandschoen Positie (Fulcrum)</span>
+            <span style="color: #f59e0b;">🟡 Amber Ring</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slBottomGlovePos" min="10" max="90" step="1" class="param-slider amber" />
+            <input type="number" id="numBottomGlovePos" class="param-num" />
+            <span class="param-unit">%</span>
+          </div>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Onderhand Duwkracht</span>
+            <span>Amplitude</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slBottomGloveAmp" min="-100" max="100" step="1" class="param-slider amber" />
+            <input type="number" id="numBottomGloveAmp" class="param-num" />
+            <span class="param-unit">%</span>
+          </div>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Bovenhand Trekkracht</span>
+            <span style="color: #38bdf8;">🔵 Handvat</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slTopHandAmp" min="-100" max="100" step="1" class="param-slider" />
+            <input type="number" id="numTopHandAmp" class="param-num" />
+            <span class="param-unit">%</span>
+          </div>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Maximale Buigingshoek</span>
+            <span>Piek</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slMaxBend" min="5" max="60" step="1" class="param-slider" />
+            <input type="number" id="numMaxBend" class="param-num" />
+            <span class="param-unit">°</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Lokaal stijfheidsprofiel -->
+      <div class="control-group">
+        <div class="group-title sky">
+          <span>2. Stiffness Profile</span>
+          <span>50–125</span>
+        </div>
+        <div class="param-header"><span>Afgeleid kickpoint</span><strong id="kickpointReadout" class="ticker-value">Mid Kick</strong></div>
+        <div class="param-header"><span>Gemiddelde schachtstijfheid</span><strong id="flexReadout" class="ticker-value">Flex 90</strong></div>
+        <canvas id="stiffnessCurve" class="stiffness-editor" aria-label="Bewerkbare stijfheidscurve: verticale as is stickpositie, horizontale as is stijfheid"></canvas>
+        <div class="param-header">
+          <span>50 (buigzaam)</span>
+          <span>125 (stijf)</span>
+        </div>
+        <p class="stiffness-help">Y-as: positie op de stick (blad onder, handvat boven). X-as: stijfheid. Het kickpoint wordt afgeleid uit zones die minstens 4 punten zachter zijn dan het gemiddelde; twee losse zones geven Hybrid Kick. Flex is de gemiddelde schachtstijfheid, afgerond op stappen van 5. Een lager kickpoint versnelt de opbouw en snap-back; een hoger kickpoint vertraagt ze licht en verhoogt de piekkracht. Klik om een punt toe te voegen of sleep punten om de lokale weerstand aan te passen.</p>
+        <button id="btnResetStiffness" class="btn-jump">Stijfheidsprofiel herstellen</button>
+      </div>
+
+      <!-- 3. Fulcrum & Release Dynamiek -->
+      <div class="control-group">
+        <div class="group-title amber">
+          <span>2. Fulcrum &amp; Release Dynamiek (vanaf 600 ms)</span>
+          <span>⚡ Release</span>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Startmoment Tophand Neerwaarts</span>
+            <span>Vanaf dit tijdstip</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slTopPullStart" min="600" max="850" step="10" class="param-slider amber" />
+            <input type="number" id="numTopPullStart" class="param-num" />
+            <span class="param-unit">ms</span>
+          </div>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Tophand Neerwaarts Trekken</span>
+            <span>▼ Omlaag</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slTopPullDown" min="0" max="200" step="5" class="param-slider" />
+            <input type="number" id="numTopPullDown" class="param-num" />
+            <span class="param-unit">mm</span>
+          </div>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Follow-Through Draaihoek</span>
+            <span>Hefboom</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slFollowAngle" min="0" max="50" step="1" class="param-slider amber" />
+            <input type="number" id="numFollowAngle" class="param-num" />
+            <span class="param-unit">°</span>
+          </div>
+        </div>
+
+        <div class="param-row">
+          <div class="param-header">
+            <span>Blad Zwiep &amp; Lift Sterkte</span>
+            <span>Vrijgave</span>
+          </div>
+          <div class="param-inputs">
+            <input type="range" id="slBladeWhip" min="0" max="200" step="5" class="param-slider" />
+            <input type="number" id="numBladeWhip" class="param-num" />
+            <span class="param-unit">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Tijdlijn & Simulatie -->
+      <div class="control-group">
+        <div class="group-title sky">
+          <span>4. Tijdlijn &amp; Afspelen</span>
+          <span id="lblTimeline">600 ms</span>
+        </div>
+
+        <button id="btnHoldMax" class="btn-toggle active">
+          ✓ Maximale Buiging Vasthouden (600 ms)
+        </button>
+
+        <div class="param-inputs" style="margin-top: 4px;">
+          <input type="range" id="slTimeline" min="0" max="1200" step="5" value="600" class="param-slider" />
+          <button id="btnPlay" class="btn-play">▶ Speel</button>
+        </div>
+
+        <div class="quick-jumps">
+          <button class="btn-jump" data-time="0">0 ms (Start)</button>
+          <button class="btn-jump" data-time="450">450 ms (Opbouw)</button>
+          <button class="btn-jump active" data-time="600">600 ms (Piek &amp; Release)</button>
+          <button class="btn-jump" data-time="750">750 ms (Zwiep)</button>
+          <button class="btn-jump" data-time="1000">1000 ms (Follow-through)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const MODEL_URL = 'https://raw.githubusercontent.com/michieltw/GLB-s/main/glb_files_retextured/P28-ST.glb';
+
+    // Injected active experiment config
+    const DEFAULT_STIFFNESS_CURVE = [
+      { y: 0, x: 0.5 },
+      { y: 0.33, x: 0.5 },
+      { y: 0.66, x: 0.5 },
+      { y: 1, x: 0.5 }
+    ];
+    const state = {"bottomGlovePos":50,"bottomGloveAmp":100,"bottomGloveTimeframe":250,"topHandAmp":100,"topHandTimeframe":250,"maxBendAngle":45,"topHandPullStartMs":600,"topHandPullDownMm":100,"followThroughAngle":50,"bladeWhipStrength":100,"timeline":600,"isPlaying":false,"holdMaxBend":false,"bendAxis":"forwards","anchorMode":"bow","stiffnessCurve":DEFAULT_STIFFNESS_CURVE.map(point => ({ ...point }))};
+
+    // Constants
+    const L_total = 1400;
+    const Z_center = 23;
+    const X_center = -100;
+    const SEGMENTS = 140;
+
+    // Three.js Scene Setup
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#020617');
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 20000);
+    camera.position.set(0, 700, 2600);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 600, 0);
+
+    // Lights
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(ambLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.4);
+    dirLight1.position.set(500, 1500, 1000);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.8);
+    dirLight2.position.set(-600, -200, -800);
+    scene.add(dirLight2);
+
+    // Game Entities
+    const game = {
+      score: 0,
+      shots: 0,
+      puck: null,
+      puckVelocity: new THREE.Vector3(0, 0, 0),
+      net: null,
+      ice: null,
+      puckState: 'idle' // idle, shot, goal
+    };
+
+    // Ice
+    const iceGeo = new THREE.PlaneGeometry(10000, 10000);
+    const iceMat = new THREE.MeshStandardMaterial({
+      color: 0xcccccc,
+      roughness: 0.1,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.8
+    });
+    game.ice = new THREE.Mesh(iceGeo, iceMat);
+    game.ice.rotation.x = -Math.PI / 2;
+    game.ice.position.y = 0;
+    scene.add(game.ice);
+
+    // Puck
+    const puckGeo = new THREE.CylinderGeometry(15, 15, 10, 32);
+    const puckMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+    game.puck = new THREE.Mesh(puckGeo, puckMat);
+    // Position puck near where the blade normally ends up
+    game.puck.position.set(0, 5, -80);
+    scene.add(game.puck);
+
+    // Net
+    const netWidth = 300;
+    const netHeight = 200;
+    const netDepth = 100;
+    game.net = new THREE.Group();
+
+    // Posts
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.3 });
+    const postGeo = new THREE.CylinderGeometry(5, 5, netHeight);
+
+    const leftPost = new THREE.Mesh(postGeo, postMat);
+    leftPost.position.set(-netWidth/2, netHeight/2, 0);
+    game.net.add(leftPost);
+
+    const rightPost = new THREE.Mesh(postGeo, postMat);
+    rightPost.position.set(netWidth/2, netHeight/2, 0);
+    game.net.add(rightPost);
+
+    const crossbarGeo = new THREE.CylinderGeometry(5, 5, netWidth);
+    const crossbar = new THREE.Mesh(crossbarGeo, postMat);
+    crossbar.rotation.z = Math.PI / 2;
+    crossbar.position.set(0, netHeight, 0);
+    game.net.add(crossbar);
+
+    // Net position - back on the ice
+    game.net.position.set(0, 0, -800);
+    scene.add(game.net);
+
+    // Physical markers (Fulcrum = amber, top hand = sky blue)
+    function createMarker(colorHex) {
+      const geom = new THREE.TorusGeometry(26, 4, 16, 32);
+      const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+      const mesh = new THREE.Mesh(geom, mat);
+      scene.add(mesh);
+      return mesh;
+    }
+    const bgMarker = createMarker(0xf59e0b); // Amber
+    const thMarker = createMarker(0x38bdf8); // Sky blue
+
+    let stickMesh = null;
+    let stickGroup = null;
+    let originalPositions = null;
+    let vertexRows = null;
+    let sortedStiffnessCurve = [...state.stiffnessCurve].sort((a, b) => a.y - b.y);
+    let cachedStiffnessDynamics = null;
+    let playDirection = 1;
+    let lastTime = performance.now();
+
+    function refreshStiffnessCurveCache() {
+      sortedStiffnessCurve = [...state.stiffnessCurve].sort((a, b) => a.y - b.y);
+      cachedStiffnessDynamics = null;
+    }
+
+    function getStiffnessAt(position) {
+      const y = Math.max(0, Math.min(1, position));
+      const points = sortedStiffnessCurve;
+      if (y <= points[0].y) return 50 + points[0].x * 75;
+      for (let i = 1; i < points.length; i++) {
+        if (y <= points[i].y) {
+          const span = points[i].y - points[i - 1].y;
+          const t = span > 0 ? (y - points[i - 1].y) / span : 0;
+          const x = points[i - 1].x + (points[i].x - points[i - 1].x) * t;
+          return 50 + x * 75;
+        }
+      }
+      return 50 + points[points.length - 1].x * 75;
+    }
+
+    function getStiffnessDynamics() {
+      if (cachedStiffnessDynamics) return cachedStiffnessDynamics;
+      const points = sortedStiffnessCurve;
+      const average = points.slice(1).reduce((sum, point, i) =>
+        sum + (point.y - points[i].y) * (50 + 75 * (points[i].x + point.x) / 2), 0
+      );
+      const sampleCount = 100;
+      const threshold = average - 4;
+      const softZoneCenters = [];
+      let zoneStart = -1;
+
+      for (let i = 0; i <= sampleCount; i++) {
+        const isSoft = getStiffnessAt(i / sampleCount) < threshold;
+        if (isSoft && zoneStart < 0) zoneStart = i;
+        if ((!isSoft || i === sampleCount) && zoneStart >= 0) {
+          const zoneEnd = isSoft && i === sampleCount ? i : i - 1;
+          if (zoneEnd - zoneStart >= 6) {
+            softZoneCenters.push((zoneStart + zoneEnd) / (2 * sampleCount));
+          }
+          zoneStart = -1;
+        }
+      }
+
+      const kickPosition = softZoneCenters.length
+        ? softZoneCenters.reduce((sum, position) => sum + position, 0) / softZoneCenters.length
+        : 0.5;
+      const stiffnessBias = ((average - 87.5) / 37.5) * 0.08;
+      const kickPositionBias = (kickPosition - 0.5) * 0.12;
+      const timingScale = Math.max(0.84, Math.min(1.16, 1 + stiffnessBias + kickPositionBias));
+      const powerScale = Math.max(0.92, Math.min(1.08, 1 + ((average - 87.5) / 37.5) * 0.08));
+
+      cachedStiffnessDynamics = { average, timingScale, powerScale };
+      return cachedStiffnessDynamics;
+    }
+
+    // Discrete Arc-Length Parameterization (discrete booglengte-parametrisatie)
+    // Strictly conserves neutral axis arc length ds = L_total / (SEGMENTS - 1)
+    // Evaluates both initial forehand bend and opposite whip counter-flex
+    function computeBeamProfile(currentBendDeg, bgPercent, isReleased, leverAngleDeg, topPullDownMm, followProgress, peakBendDeg) {
+      const ds = L_total / (SEGMENTS - 1);
+      const s_bg = Math.max(0.12 * L_total, Math.min(0.88 * L_total, (bgPercent / 100) * L_total));
+      const kappa = new Float64Array(SEGMENTS);
+      let referenceCurvature = 0;
+
+      for (let i = 0; i < SEGMENTS; i++) {
+        const s = i * ds;
+        const u = s / L_total;
+        let M = (s <= s_bg) ? Math.sin((Math.PI / 2) * (s / s_bg)) : Math.cos((Math.PI / 2) * ((s - s_bg) / (L_total - s_bg)));
+        const handleStiff = 1.5 * Math.pow(Math.max(0, (u - 0.88) / 0.12), 2);
+        const hoselStiff = 0.8 * Math.pow(Math.max(0, (0.08 - u) / 0.08), 2);
+        const baseEI = 1.0 + handleStiff + hoselStiff;
+        const localStiffness = getStiffnessAt(u);
+        const EI = baseEI * (localStiffness / 87.5);
+        const k = M / EI;
+        kappa[i] = k;
+        referenceCurvature += (M / baseEI) * ds;
+      }
+
+      // Supports both positive (initial forehand bend) and negative (opposite whip bend)
+      const targetRad = (currentBendDeg * Math.PI) / 180;
+      // Calibrate against the original shaft so profile-wide stiffness changes
+      // alter total flex, while the default 87.5 profile preserves the baseline.
+      const scale = referenceCurvature !== 0 ? targetRad / referenceCurvature : 0;
+      for (let i = 0; i < SEGMENTS; i++) kappa[i] *= scale;
+
+      // Tangent slope integrated strictly along discrete arc length ds
+      const rawTheta = new Float64Array(SEGMENTS);
+      rawTheta[0] = 0;
+      for (let i = 1; i < SEGMENTS; i++) {
+        rawTheta[i] = rawTheta[i - 1] + 0.5 * (kappa[i - 1] + kappa[i]) * ds;
+      }
+
+      // Exact discrete arc-length root finding for bow anchor theta0
+      let th = 0;
+      for (let iter = 0; iter < 10; iter++) {
+        let zEnd = 0;
+        let dz_dth = 0;
+        for (let i = 1; i < SEGMENTS; i++) {
+          const thMid = 0.5 * (rawTheta[i - 1] + rawTheta[i]) + th;
+          zEnd += Math.sin(thMid) * ds;
+          dz_dth += Math.cos(thMid) * ds;
+        }
+        if (Math.abs(zEnd) < 1e-7) break;
+        th -= zEnd / (dz_dth || 1);
+      }
+      const theta0 = th;
+
+      const cumulativeAngle = new Float32Array(SEGMENTS);
+      const cumulativeZ = new Float32Array(SEGMENTS);
+      const cumulativeY = new Float32Array(SEGMENTS);
+
+      if (isReleased) {
+        // Discrete Arc-Length Parameterization during Release & Whip (t > 600 ms)
+        // Neutral axis length is strictly conserved: (dz)^2 + (dy)^2 == (ds)^2.
+        // Fulcrum hand at s_bg acts as spatial pivot.
+        // The top hand moves in the OPPOSITE direction (+Z, backward towards player),
+        // which lever-pivots around the bottom hand to give the blade an even stronger forward whip (-Z)!
+        const i_bg = Math.round(s_bg / ds);
+        const peakBend = peakBendDeg || 35;
+        const peakScale = currentBendDeg !== 0 ? peakBend / currentBendDeg : 0;
+        const peakRawTheta = new Float64Array(SEGMENTS);
+        for (let i = 1; i < SEGMENTS; i++) {
+          peakRawTheta[i] = rawTheta[i] * peakScale;
+        }
+        let peakTh = 0;
+        for (let iter = 0; iter < 10; iter++) {
+          let zEnd = 0;
+          let dz_dth = 0;
+          for (let i = 1; i < SEGMENTS; i++) {
+            const thMid = 0.5 * (peakRawTheta[i - 1] + peakRawTheta[i]) + peakTh;
+            zEnd += Math.sin(thMid) * ds;
+            dz_dth += Math.cos(thMid) * ds;
+          }
+          if (Math.abs(zEnd) < 1e-7) break;
+          peakTh -= zEnd / (dz_dth || 1);
+        }
+        let refZ_bg = 0;
+        let refY_bg = 0;
+        for (let i = 1; i <= i_bg; i++) {
+          const thMid = 0.5 * (peakRawTheta[i - 1] + peakRawTheta[i]) + peakTh;
+          refZ_bg += Math.sin(thMid) * ds;
+          refY_bg += Math.cos(thMid) * ds;
+        }
+        const peakTheta_bg = peakRawTheta[i_bg] + peakTh;
+
+        // Gradually remove curvature above the fulcrum while rotating the whole
+        // shaft forward, so the blade supplies the extra rotation instead of a
+        // permanently bowed upper section.
+        const progress = Math.max(0, Math.min(1, followProgress || 0));
+        const upperCurvature = 1 - progress;
+        const maxSwingAngle = (78 * Math.PI) / 180;
+        const peakTopAngle = peakRawTheta[SEGMENTS - 1] + peakTh;
+        const requestedTopAngle = peakTopAngle + (leverAngleDeg * Math.PI / 180) * progress;
+        let minRelativeAngle = Infinity;
+        let maxRelativeAngle = -Infinity;
+
+        for (let i = 0; i < SEGMENTS; i++) {
+          const relativeAngle = rawTheta[i] - rawTheta[i_bg];
+          const adjustedRelative = i > i_bg ? relativeAngle * upperCurvature : relativeAngle;
+          minRelativeAngle = Math.min(minRelativeAngle, adjustedRelative);
+          maxRelativeAngle = Math.max(maxRelativeAngle, adjustedRelative);
+        }
+
+        const minFulcrumAngle = -maxSwingAngle - minRelativeAngle;
+        const maxFulcrumAngle = maxSwingAngle - maxRelativeAngle;
+        const topRelativeAngle = (rawTheta[SEGMENTS - 1] - rawTheta[i_bg]) * upperCurvature;
+        const minTopAngle = minFulcrumAngle + topRelativeAngle;
+        const maxTopAngle = maxFulcrumAngle + topRelativeAngle;
+        const targetTopAngle = Math.max(
+          minTopAngle,
+          Math.min(maxTopAngle, Math.max(peakTopAngle, requestedTopAngle))
+        );
+        const th_bg = targetTopAngle - topRelativeAngle;
+
+        // Preserve the lower-shaft flex, but progressively straighten the span
+        // from fulcrum to top hand. At full release all upper tangents are equal.
+        for (let i = 0; i < SEGMENTS; i++) {
+          const relativeAngle = rawTheta[i] - rawTheta[i_bg];
+          cumulativeAngle[i] = th_bg + (i > i_bg ? relativeAngle * upperCurvature : relativeAngle);
+        }
+
+
+      // Fulcrum anchor position with player downward follow-through pull
+      const fulcrumZ = refZ_bg;
+      const fulcrumY = refY_bg - (topPullDownMm || 0) * progress * 0.3;
+
+      const absZ = new Float64Array(SEGMENTS);
+      const absY = new Float64Array(SEGMENTS);
+      absZ[i_bg] = fulcrumZ;
+      absY[i_bg] = fulcrumY;
+
+      // Upward integration along discrete arc length from fulcrum to butt end:
+      for (let i = i_bg + 1; i < SEGMENTS; i++) {
+        const thMid = 0.5 * (cumulativeAngle[i - 1] + cumulativeAngle[i]);
+        absZ[i] = absZ[i - 1] + Math.sin(thMid) * ds;
+        absY[i] = absY[i - 1] + Math.cos(thMid) * ds;
+      }
+
+      // Downward integration along discrete arc length from fulcrum to hosel & blade:
+      for (let i = i_bg - 1; i >= 0; i--) {
+        const thMid = 0.5 * (cumulativeAngle[i] + cumulativeAngle[i + 1]);
+        absZ[i] = absZ[i + 1] - Math.sin(thMid) * ds;
+        absY[i] = absY[i + 1] - Math.cos(thMid) * ds;
+      }
+
+      for (let i = 0; i < SEGMENTS; i++) {
+        cumulativeZ[i] = absZ[i];
+        cumulativeY[i] = absY[i] - i * ds; // exact arc-shortening delta from arc length
+      }
+    } else {
+      // Initial Bending Phase (0 to 600 ms on ice):
+      for (let i = 0; i < SEGMENTS; i++) {
+        cumulativeAngle[i] = rawTheta[i] + theta0;
+      }
+      cumulativeZ[0] = 0;
+      let curY = 0;
+      cumulativeY[0] = 0;
+
+      for (let i = 1; i < SEGMENTS; i++) {
+        const s = i * ds;
+        const thMid = 0.5 * (cumulativeAngle[i - 1] + cumulativeAngle[i]);
+        const dz = Math.sin(thMid) * ds;
+        const dyStep = Math.cos(thMid) * ds;
+        cumulativeZ[i] = cumulativeZ[i - 1] + dz;
+        curY += dyStep;
+        cumulativeY[i] = curY - s; // exact arc-shortening delta from arc length
+      }
+    }
+
+      return {
+        cumulativeAngle,
+        cumulativeZ,
+        cumulativeY,
+        thetaHosel: cumulativeAngle[0],
+        deltaZHosel: cumulativeZ[0],
+        deltaYHosel: cumulativeY[0]
+      };
+    }
+
+    function sampleDeformation(origY, profile) {
+      const u = Math.max(0, Math.min(1, origY / L_total));
+      const segs = profile.cumulativeZ.length;
+      const idx = u * (segs - 1);
+      const i0 = Math.floor(idx);
+      const i1 = Math.min(segs - 1, i0 + 1);
+      const frac = idx - i0;
+
+      const dz = profile.cumulativeZ[i0] + (profile.cumulativeZ[i1] - profile.cumulativeZ[i0]) * frac;
+      const dy = profile.cumulativeY[i0] + (profile.cumulativeY[i1] - profile.cumulativeY[i0]) * frac;
+      const theta = profile.cumulativeAngle[i0] + (profile.cumulativeAngle[i1] - profile.cumulativeAngle[i0]) * frac;
+
+      return { dz, dy, theta };
+    }
+
+    // Evaluation & Mesh Update
+    function updatePhysics() {
+      const t = state.timeline;
+      const stiffnessDynamics = getStiffnessDynamics();
+      const loadTimeScale = stiffnessDynamics.timingScale;
+      const recoveryTimeScale = stiffnessDynamics.timingScale;
+      const tPeak = Math.max(540, Math.min(660, 600 * loadTimeScale));
+      const bgAmpMag = Math.abs(state.bottomGloveAmp) / 100;
+      const thAmpMag = Math.abs(state.topHandAmp) / 100;
+      const bgWindow = Math.max(20, Math.abs(state.bottomGloveTimeframe) * loadTimeScale);
+      const thWindow = Math.max(20, Math.abs(state.topHandTimeframe) * loadTimeScale);
+
+      let bgPulse = 0;
+      let thPulse = 0;
+      if (state.holdMaxBend) {
+        bgPulse = 1.0;
+        thPulse = 1.0;
+      } else if (t <= tPeak) {
+        const dtBg = Math.abs(t - tPeak);
+        if (dtBg <= bgWindow / 2) {
+          bgPulse = Math.sin(((t - (tPeak - bgWindow / 2)) / bgWindow) * Math.PI);
+        }
+        const dtTh = Math.abs(t - tPeak);
+        if (dtTh <= thWindow / 2) {
+          thPulse = Math.sin(((t - (tPeak - thWindow / 2)) / thWindow) * Math.PI);
+        }
+      }
+
+      const fBottom = bgAmpMag * bgPulse;
+      const fTop = thAmpMag * thPulse;
+      const netForceFactor = (fBottom + fTop) / 1.6;
+      const peakBendDeg = state.maxBendAngle * ((bgAmpMag + thAmpMag) / 1.6) * stiffnessDynamics.powerScale;
+
+      let isReleased = false;
+      let currentBendDeg = 0;
+      let leverAngleDeg = 0;
+      let topPullDownMm = 0;
+      let pullProgress = 0;
+
+      if (state.holdMaxBend || t <= tPeak) {
+        currentBendDeg = netForceFactor * state.maxBendAngle * stiffnessDynamics.powerScale;
+        isReleased = false;
+      } else {
+        isReleased = true;
+        const releaseDuration = (1000 - 600) * recoveryTimeScale;
+        const tau = Math.max(0, Math.min(1, (t - tPeak) / releaseDuration));
+
+        // Dynamic whip recoil oscillation: snaps through 0° into opposite bend (buiging de andere kant op als gevolg van de whip)
+        // Both initial bend and opposite whip bend are evaluated strictly through discrete arc-length parameterization
+        const decay = Math.exp(-2.2 * tau);
+        const whipScale = (state.bladeWhipStrength ?? 100) / 100;
+        const whipPhase = 2.2 * Math.PI * tau;
+        // Cancel the decay's initial slope so the release starts without a velocity drop at 600 ms.
+        const osc = Math.cos(whipPhase) + (1 / Math.PI) * Math.sin(whipPhase) +
+          (whipScale - 1) * Math.sin(whipPhase) ** 2;
+        const window = Math.cos((Math.PI / 2) * Math.pow(tau, 1.3));
+        currentBendDeg = peakBendDeg * decay * osc * window;
+
+        const baseFollowAngle = state.followThroughAngle ?? 28;
+        const topScale = Math.max(0.2, thAmpMag / 0.8);
+        const configuredPullStart = state.topHandPullStartMs ?? 600;
+        const pullStartMs = tPeak + (configuredPullStart - 600);
+        const pullDuration = Math.max(1, (850 - configuredPullStart) * recoveryTimeScale);
+        const pullTau = Math.max(0, Math.min(1, (t - pullStartMs) / pullDuration));
+        // Cosine easing gives the top hand a gradual start and a smooth stop.
+        pullProgress = 0.5 * (1 - Math.cos(pullTau * Math.PI));
+
+        // The adjustable pull timing drives both the top-hand lever and its downward travel.
+        leverAngleDeg = baseFollowAngle * topScale;
+        topPullDownMm = (state.topHandPullDownMm ?? 100) * topScale;
+      }
+
+      let profile = computeBeamProfile(
+        currentBendDeg,
+        state.bottomGlovePos,
+        isReleased,
+        leverAngleDeg,
+        topPullDownMm,
+        pullProgress,
+        peakBendDeg
+      );
+
+      // Blend the bow-anchored pose into the fulcrum release pose over 60 ms.
+      if (isReleased && t < tPeak + 60) {
+        const releaseBlend = Math.max(0, Math.min(1, (t - tPeak) / 60));
+        const blend = releaseBlend * releaseBlend * (3 - 2 * releaseBlend);
+        const initialProfile = computeBeamProfile(
+          currentBendDeg,
+          state.bottomGlovePos,
+          false,
+          0,
+          0,
+          0,
+          peakBendDeg
+        );
+
+        for (let i = 0; i < profile.cumulativeAngle.length; i++) {
+          profile.cumulativeAngle[i] = initialProfile.cumulativeAngle[i] +
+            (profile.cumulativeAngle[i] - initialProfile.cumulativeAngle[i]) * blend;
+          profile.cumulativeZ[i] = initialProfile.cumulativeZ[i] +
+            (profile.cumulativeZ[i] - initialProfile.cumulativeZ[i]) * blend;
+          profile.cumulativeY[i] = initialProfile.cumulativeY[i] +
+            (profile.cumulativeY[i] - initialProfile.cumulativeY[i]) * blend;
+        }
+        profile.thetaHosel = profile.cumulativeAngle[0];
+        profile.deltaZHosel = profile.cumulativeZ[0];
+        profile.deltaYHosel = profile.cumulativeY[0];
+      }
+
+      // Update Mesh Vertices
+      if (stickMesh && originalPositions) {
+        const pos = stickMesh.geometry.attributes.position.array;
+        const orig = originalPositions;
+        const cosHosel = Math.cos(profile.thetaHosel);
+        const sinHosel = Math.sin(profile.thetaHosel);
+
+        // Vertices sharing the same shaft height also share the same deformation.
+        // Evaluate interpolation and trigonometry once per height instead of once per vertex.
+        for (const row of vertexRows) {
+          const origY = row.y;
+          if (origY >= 0) {
+            const deform = sampleDeformation(origY, profile);
+            const cosT = Math.cos(deform.theta);
+            const sinT = Math.sin(deform.theta);
+            for (const i of row.indices) {
+              const relX = orig[i] - X_center;
+              const relZ = orig[i + 2] - Z_center;
+              pos[i] = X_center + relX;
+              pos[i + 1] = origY + deform.dy - relZ * sinT;
+              pos[i + 2] = Z_center + deform.dz + relZ * cosT;
+            }
+          } else {
+            for (const i of row.indices) {
+              const relX = orig[i] - X_center;
+              const relZ = orig[i + 2] - Z_center;
+              pos[i] = X_center + relX;
+              pos[i + 1] = profile.deltaYHosel + origY * cosHosel - relZ * sinHosel;
+              pos[i + 2] = Z_center + profile.deltaZHosel + origY * sinHosel + relZ * cosHosel;
+            }
+          }
+        }
+        stickMesh.geometry.attributes.position.needsUpdate = true;
+        stickMesh.geometry.computeVertexNormals();
+
+        // Update Markers
+        const y_bg = (state.bottomGlovePos / 100) * L_total;
+        const d_bg = sampleDeformation(y_bg, profile);
+        bgMarker.position.set(X_center, y_bg + d_bg.dy, Z_center + d_bg.dz);
+        bgMarker.rotation.set(-d_bg.theta, 0, 0);
+
+        const y_th = L_total;
+        const d_th = sampleDeformation(y_th, profile);
+        thMarker.position.set(X_center, y_th + d_th.dy, Z_center + d_th.dz);
+        thMarker.rotation.set(-d_th.theta, 0, 0);
+      }
+
+      // Update Live Ticker
+      const tickPhase = document.getElementById('tickPhase');
+      const tickBend = document.getElementById('tickBend');
+      const tickBlade = document.getElementById('tickBlade');
+      const tickTop = document.getElementById('tickTop');
+
+      if (tickPhase) {
+        tickPhase.textContent = state.holdMaxBend
+          ? 'Piek (600 ms)'
+          : (isReleased ? '⚡ Release & Fulcrum' : 'Opbouw op ijs');
+        tickPhase.style.color = isReleased ? '#f59e0b' : '#38bdf8';
+      }
+      if (tickBend) {
+        tickBend.textContent = currentBendDeg.toFixed(1) + '°' + (isReleased ? ' (strekt)' : '');
+      }
+      if (tickBlade) {
+        tickBlade.textContent = isReleased
+          ? ('▲ +' + profile.deltaYHosel.toFixed(0) + 'mm | ◀ ' + profile.deltaZHosel.toFixed(0) + 'mm')
+          : 'Op het ijs (0 mm)';
+        tickBlade.style.color = isReleased ? '#10b981' : '#38bdf8';
+      }
+      if (tickTop) {
+        tickTop.textContent = isReleased
+          ? ('▼ -' + (topPullDownMm * pullProgress).toFixed(0) + 'mm (Fulcrum ' + state.bottomGlovePos + '%)')
+          : 'Gefixeerd (0 mm)';
+        tickTop.style.color = isReleased ? '#f59e0b' : '#38bdf8';
+      }
+    }
+
+    // Connect UI Elements
+    function syncUiFromState() {
+      function sync(idSlider, idNum, val) {
+        const sl = document.getElementById(idSlider);
+        const num = document.getElementById(idNum);
+        if (sl) sl.value = val;
+        if (num) num.value = val;
+      }
+      sync('slBottomGlovePos', 'numBottomGlovePos', state.bottomGlovePos);
+      sync('slBottomGloveAmp', 'numBottomGloveAmp', state.bottomGloveAmp);
+      sync('slTopHandAmp', 'numTopHandAmp', state.topHandAmp);
+      sync('slMaxBend', 'numMaxBend', state.maxBendAngle);
+      sync('slTopPullStart', 'numTopPullStart', state.topHandPullStartMs ?? 500);
+      sync('slTopPullDown', 'numTopPullDown', state.topHandPullDownMm ?? 85);
+      sync('slFollowAngle', 'numFollowAngle', state.followThroughAngle ?? 50);
+      sync('slBladeWhip', 'numBladeWhip', state.bladeWhipStrength ?? 100);
+
+      const slTimeline = document.getElementById('slTimeline');
+      const lblTimeline = document.getElementById('lblTimeline');
+      if (slTimeline) slTimeline.value = state.timeline;
+      if (lblTimeline) lblTimeline.textContent = state.timeline + ' ms';
+
+      const btnHold = document.getElementById('btnHoldMax');
+      if (btnHold) {
+        if (state.holdMaxBend) {
+          btnHold.classList.add('active');
+          btnHold.textContent = '✓ Maximale Buiging Vasthouden (600 ms)';
+        } else {
+          btnHold.classList.remove('active');
+          btnHold.textContent = 'Dynamische Schotcyclus';
+        }
+      }
+
+      document.querySelectorAll('.btn-jump').forEach(btn => {
+        const t = parseInt(btn.getAttribute('data-time'));
+        if (t === state.timeline && !state.holdMaxBend) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    function bindTwoWay(idSlider, idNum, key) {
+      const sl = document.getElementById(idSlider);
+      const num = document.getElementById(idNum);
+      if (sl && num) {
+        sl.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          state[key] = val;
+          num.value = val;
+          updatePhysics();
+        });
+        num.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val)) {
+            state[key] = val;
+            sl.value = val;
+            updatePhysics();
+          }
+        });
+      }
+    }
+
+    bindTwoWay('slBottomGlovePos', 'numBottomGlovePos', 'bottomGlovePos');
+    bindTwoWay('slBottomGloveAmp', 'numBottomGloveAmp', 'bottomGloveAmp');
+    bindTwoWay('slTopHandAmp', 'numTopHandAmp', 'topHandAmp');
+    bindTwoWay('slMaxBend', 'numMaxBend', 'maxBendAngle');
+    bindTwoWay('slTopPullStart', 'numTopPullStart', 'topHandPullStartMs');
+    bindTwoWay('slTopPullDown', 'numTopPullDown', 'topHandPullDownMm');
+    bindTwoWay('slFollowAngle', 'numFollowAngle', 'followThroughAngle');
+    bindTwoWay('slBladeWhip', 'numBladeWhip', 'bladeWhipStrength');
+
+    const stiffnessCanvas = document.getElementById('stiffnessCurve');
+    const stiffnessCtx = stiffnessCanvas.getContext('2d');
+    const stiffnessPlot = { left: 42, right: 12, top: 14, bottom: 24 };
+    let draggedStiffnessPoint = -1;
+
+    function analyzeStiffnessProfile() {
+      const points = sortedStiffnessCurve;
+      const sampleCount = 100;
+      const samples = Array.from({ length: sampleCount + 1 }, (_, i) =>
+        getStiffnessAt(i / sampleCount)
+      );
+      const average = points.slice(1).reduce((sum, point, i) =>
+        sum + (point.y - points[i].y) * (50 + 75 * (points[i].x + point.x) / 2), 0
+      );
+      const softThreshold = average - 4;
+      const softZones = [];
+      let zoneStart = -1;
+
+      for (let i = 0; i <= sampleCount; i++) {
+        const isSoft = samples[i] < softThreshold;
+        if (isSoft && zoneStart < 0) zoneStart = i;
+        if ((!isSoft || i === sampleCount) && zoneStart >= 0) {
+          const zoneEnd = isSoft && i === sampleCount ? i : i - 1;
+          if (zoneEnd - zoneStart >= 6) {
+            softZones.push((zoneStart + zoneEnd) / (2 * sampleCount));
+          }
+          zoneStart = -1;
+        }
+      }
+
+      const labels = [
+        'Ultra-Low Kick', 'Low-Kick', 'Mid-Low Kick',
+        'Mid Kick', 'Amplified Mid Kick', 'High Kick'
+      ];
+      const kickpoint = softZones.length >= 2
+        ? 'Hybrid Kick'
+        : labels[Math.min(5, Math.floor((softZones[0] ?? 0.5) * 6))];
+      const flexValue = Math.round(average / 5) * 5;
+
+      const kickpointReadout = document.getElementById('kickpointReadout');
+      const flexReadout = document.getElementById('flexReadout');
+      if (kickpointReadout) kickpointReadout.textContent = kickpoint;
+      if (flexReadout) flexReadout.textContent = `Flex ${flexValue}`;
+    }
+
+    function drawStiffnessCurve() {
+      const rect = stiffnessCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      stiffnessCanvas.width = Math.round(rect.width * dpr);
+      stiffnessCanvas.height = Math.round(rect.height * dpr);
+      stiffnessCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const width = rect.width;
+      const height = rect.height;
+      const plotWidth = width - stiffnessPlot.left - stiffnessPlot.right;
+      const plotHeight = height - stiffnessPlot.top - stiffnessPlot.bottom;
+      const px = x => stiffnessPlot.left + x * plotWidth;
+      const py = y => stiffnessPlot.top + (1 - y) * plotHeight;
+
+      stiffnessCtx.clearRect(0, 0, width, height);
+      stiffnessCtx.font = '10px sans-serif';
+      stiffnessCtx.textBaseline = 'middle';
+      stiffnessCtx.lineWidth = 1;
+      stiffnessCtx.strokeStyle = 'rgba(148,163,184,0.2)';
+      stiffnessCtx.fillStyle = '#94a3b8';
+      for (let i = 0; i <= 3; i++) {
+        const x = i / 3;
+        const y = i / 3;
+        const gx = px(x);
+        const gy = py(y);
+        stiffnessCtx.beginPath();
+        stiffnessCtx.moveTo(gx, stiffnessPlot.top);
+        stiffnessCtx.lineTo(gx, height - stiffnessPlot.bottom);
+        stiffnessCtx.stroke();
+        stiffnessCtx.beginPath();
+        stiffnessCtx.moveTo(stiffnessPlot.left, gy);
+        stiffnessCtx.lineTo(width - stiffnessPlot.right, gy);
+        stiffnessCtx.stroke();
+        stiffnessCtx.fillText(String(Math.round(50 + x * 75)), gx - 10, height - 10);
+        stiffnessCtx.fillText(y.toFixed(2), 3, gy);
+      }
+      stiffnessCtx.strokeStyle = '#38bdf8';
+      stiffnessCtx.lineWidth = 2;
+      stiffnessCtx.beginPath();
+      sortedStiffnessCurve.forEach((point, index) => {
+        const x = px(point.x);
+        const y = py(point.y);
+        if (index === 0) stiffnessCtx.moveTo(x, y);
+        else stiffnessCtx.lineTo(x, y);
+      });
+      stiffnessCtx.stroke();
+      state.stiffnessCurve.forEach(point => {
+        stiffnessCtx.beginPath();
+        stiffnessCtx.arc(px(point.x), py(point.y), 5, 0, Math.PI * 2);
+        stiffnessCtx.fillStyle = '#f8fafc';
+        stiffnessCtx.fill();
+        stiffnessCtx.strokeStyle = '#38bdf8';
+        stiffnessCtx.lineWidth = 2;
+        stiffnessCtx.stroke();
+      });
+      analyzeStiffnessProfile();
+    }
+
+    function stiffnessPointFromEvent(event) {
+      const rect = stiffnessCanvas.getBoundingClientRect();
+      const plotWidth = rect.width - stiffnessPlot.left - stiffnessPlot.right;
+      const plotHeight = rect.height - stiffnessPlot.top - stiffnessPlot.bottom;
+      return {
+        x: Math.max(0, Math.min(1, (event.clientX - rect.left - stiffnessPlot.left) / plotWidth)),
+        y: Math.max(0, Math.min(1, 1 - (event.clientY - rect.top - stiffnessPlot.top) / plotHeight)),
+        px: event.clientX - rect.left,
+        py: event.clientY - rect.top
+      };
+    }
+
+    stiffnessCanvas.addEventListener('pointerdown', event => {
+      const point = stiffnessPointFromEvent(event);
+      const rect = stiffnessCanvas.getBoundingClientRect();
+      const plotWidth = rect.width - stiffnessPlot.left - stiffnessPlot.right;
+      const plotHeight = rect.height - stiffnessPlot.top - stiffnessPlot.bottom;
+      draggedStiffnessPoint = state.stiffnessCurve.findIndex(item =>
+        Math.hypot((item.x - point.x) * plotWidth, (item.y - point.y) * plotHeight) < 14
+      );
+      if (draggedStiffnessPoint < 0) {
+        if (point.px < stiffnessPlot.left || point.px > rect.width - stiffnessPlot.right ||
+            point.py < stiffnessPlot.top || point.py > rect.height - stiffnessPlot.bottom) return;
+        state.stiffnessCurve.push({ x: point.x, y: point.y });
+        state.stiffnessCurve.sort((a, b) => a.y - b.y);
+        refreshStiffnessCurveCache();
+        draggedStiffnessPoint = state.stiffnessCurve.findIndex(item => item.x === point.x && item.y === point.y);
+      }
+      stiffnessCanvas.setPointerCapture(event.pointerId);
+      drawStiffnessCurve();
+      updatePhysics();
+    });
+
+    stiffnessCanvas.addEventListener('pointermove', event => {
+      if (draggedStiffnessPoint < 0) return;
+      const point = stiffnessPointFromEvent(event);
+      const item = state.stiffnessCurve[draggedStiffnessPoint];
+      item.x = point.x;
+      const epsilon = 0.005;
+      item.y = draggedStiffnessPoint === 0 ? 0 :
+        draggedStiffnessPoint === state.stiffnessCurve.length - 1 ? 1 :
+        Math.max(state.stiffnessCurve[draggedStiffnessPoint - 1].y + epsilon,
+          Math.min(state.stiffnessCurve[draggedStiffnessPoint + 1].y - epsilon, point.y));
+      state.stiffnessCurve.sort((a, b) => a.y - b.y);
+      refreshStiffnessCurveCache();
+      draggedStiffnessPoint = state.stiffnessCurve.indexOf(item);
+      drawStiffnessCurve();
+      updatePhysics();
+    });
+
+    function endStiffnessDrag() {
+      draggedStiffnessPoint = -1;
+    }
+    stiffnessCanvas.addEventListener('pointerup', endStiffnessDrag);
+    stiffnessCanvas.addEventListener('pointercancel', endStiffnessDrag);
+    document.getElementById('btnResetStiffness').addEventListener('click', () => {
+      state.stiffnessCurve = DEFAULT_STIFFNESS_CURVE.map(point => ({ ...point }));
+      refreshStiffnessCurveCache();
+      drawStiffnessCurve();
+      updatePhysics();
+    });
+    drawStiffnessCurve();
+    window.addEventListener('resize', drawStiffnessCurve);
+
+    const slTimeline = document.getElementById('slTimeline');
+    if (slTimeline) {
+      slTimeline.addEventListener('input', (e) => {
+        state.timeline = parseInt(e.target.value);
+        state.holdMaxBend = false;
+        syncUiFromState();
+        updatePhysics();
+      });
+    }
+
+    const btnHoldMax = document.getElementById('btnHoldMax');
+    if (btnHoldMax) {
+      btnHoldMax.addEventListener('click', () => {
+        state.holdMaxBend = !state.holdMaxBend;
+        if (state.holdMaxBend) state.timeline = 600;
+        syncUiFromState();
+        updatePhysics();
+      });
+    }
+
+    const btnPlay = document.getElementById('btnPlay');
+    if (btnPlay) {
+      btnPlay.addEventListener('click', () => {
+        state.isPlaying = !state.isPlaying;
+        state.holdMaxBend = false;
+        btnPlay.textContent = state.isPlaying ? '❚❚ Pauze' : '▶ Speel';
+        syncUiFromState();
+      });
+    }
+
+    document.querySelectorAll('.btn-jump').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.timeline = parseInt(btn.getAttribute('data-time'));
+        state.holdMaxBend = false;
+        syncUiFromState();
+        updatePhysics();
+      });
+    });
+
+    const btnResetAll = document.getElementById('btnResetAll');
+    if (btnResetAll) {
+      btnResetAll.addEventListener('click', () => {
+        Object.assign(state, {"bottomGlovePos":50,"bottomGloveAmp":100,"bottomGloveTimeframe":250,"topHandAmp":100,"topHandTimeframe":250,"maxBendAngle":40,"topHandPullStartMs":600,"topHandPullDownMm":130,"followThroughAngle":35,"bladeWhipStrength":100,"timeline":500,"isPlaying":false,"holdMaxBend":true,"bendAxis":"forwards","anchorMode":"bow"});
+        state.stiffnessCurve = DEFAULT_STIFFNESS_CURVE.map(point => ({ ...point }));
+        refreshStiffnessCurveCache();
+        drawStiffnessCurve();
+        syncUiFromState();
+        updatePhysics();
+      });
+    }
+
+    const panelHeader = document.getElementById('panelHeader');
+    const panel = document.getElementById('workbenchPanel');
+    const collapseIcon = document.getElementById('collapseIcon');
+    if (panelHeader && panel) {
+      panelHeader.addEventListener('click', () => {
+        panel.classList.toggle('collapsed');
+        collapseIcon.textContent = panel.classList.contains('collapsed') ? '▲ Uitklappen' : '▼ Inklappen';
+      });
+    }
+
+    // Load Model
+    const loader = new GLTFLoader();
+    loader.load(
+      MODEL_URL,
+      (gltf) => {
+        const root = gltf.scene;
+        root.traverse((child) => {
+          if (child.isMesh && !stickMesh) {
+            stickMesh = child;
+          }
+        });
+
+        if (stickMesh) {
+          const geom = stickMesh.geometry;
+          geom.computeVertexNormals();
+          originalPositions = new Float32Array(geom.attributes.position.array);
+          const rowsByHeight = new Map();
+          for (let i = 0; i < originalPositions.length; i += 3) {
+            const y = originalPositions[i + 1];
+            let row = rowsByHeight.get(y);
+            if (!row) {
+              row = { y, indices: [] };
+              rowsByHeight.set(y, row);
+            }
+            row.indices.push(i);
+          }
+          vertexRows = Array.from(rowsByHeight.values());
+
+          stickMesh.material = new THREE.MeshStandardMaterial({
+            roughness: 0.5,
+            metalness: 0.25,
+            side: THREE.DoubleSide
+          });
+        }
+
+        stickGroup = new THREE.Group();
+        stickGroup.rotation.y = 0.22;
+        stickGroup.add(root);
+        scene.add(stickGroup);
+
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+          overlay.style.opacity = '0';
+          setTimeout(() => overlay.remove(), 400);
+        }
+
+        syncUiFromState();
+        updatePhysics();
+      },
+      undefined,
+      (err) => {
+        console.error('Model load error:', err);
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+          overlay.innerHTML = '<div style="color: #ef4444; font-weight: 800;">Fout bij laden van 3D model. Controleer internetverbinding.</div>';
+        }
+      }
+    );
+
+    function updateGameScore() {
+      document.getElementById('score-val').textContent = game.score;
+      document.getElementById('shots-val').textContent = game.shots;
+    }
+
+    function resetPuck() {
+      game.puck.position.set(0, 5, -80);
+      game.puckVelocity.set(0, 0, 0);
+      game.puckState = 'idle';
+
+      // Auto pause if it was playing
+      if (state.isPlaying) {
+         state.isPlaying = false;
+         btnPlay.textContent = '▶ Speel';
+         state.timeline = 0; // Reset stick
+         updatePhysics();
+      }
+    }
+
+    // Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+      const now = performance.now();
+      const delta = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (state.isPlaying && !state.holdMaxBend) {
+        const stepRate = 800 * delta;
+        let next = state.timeline + stepRate * playDirection;
+        if (next >= 1200) {
+          next = 1200;
+          playDirection = -1;
+        } else if (next <= 0) {
+          next = 0;
+          playDirection = 1;
+        }
+        state.timeline = Math.round(next);
+        syncUiFromState();
+        updatePhysics();
+
+        // Blade collision detection
+        // The blade moves in -Z direction and +Y direction during whip
+        // We trigger shot when timeline is around the peak release (600-700ms)
+        // and blade is close to puck
+        if (game.puckState === 'idle' && state.timeline > 650 && state.timeline < 800) {
+           // We can approximate stick blade pos using Z_center + profile.deltaZHosel
+           // from last physics update, but we don't store it globally.
+           // A simpler heuristic for this demo:
+           game.puckState = 'shot';
+           game.shots++;
+           updateGameScore();
+
+           // Apply velocity based on state params
+           const whip = state.bladeWhipStrength / 100;
+           const speedZ = -1500 - (500 * whip); // Fast in -Z towards net
+           const speedY = 200 + (300 * whip);  // Upwards lift
+           const speedX = (Math.random() - 0.5) * 400; // Slight random X
+
+           game.puckVelocity.set(speedX, speedY, speedZ);
+        }
+      }
+
+      // Puck Physics
+      if (game.puckState === 'shot' || game.puckState === 'goal') {
+        // Apply gravity
+        game.puckVelocity.y -= 980 * delta;
+
+        // Move puck
+        game.puck.position.addScaledVector(game.puckVelocity, delta);
+
+        // Floor collision
+        if (game.puck.position.y < 5) {
+           game.puck.position.y = 5;
+           game.puckVelocity.y = -game.puckVelocity.y * 0.3; // bounce
+           game.puckVelocity.x *= 0.98; // friction
+           game.puckVelocity.z *= 0.98;
+        }
+
+        // Check Goal
+        if (game.puckState === 'shot') {
+           const netX = game.net.position.x;
+           const netZ = game.net.position.z;
+
+           // Simple AABB check for net
+           if (game.puck.position.z < netZ && game.puck.position.z > netZ - 100) {
+             if (Math.abs(game.puck.position.x - netX) < 150 && game.puck.position.y < 200) {
+                game.puckState = 'goal';
+                game.score++;
+                updateGameScore();
+
+                // Show goal text
+                const goalEl = document.createElement('div');
+                goalEl.textContent = 'GOAL!';
+                goalEl.style.position = 'absolute';
+                goalEl.style.top = '50%';
+                goalEl.style.left = '50%';
+                goalEl.style.transform = 'translate(-50%, -50%)';
+                goalEl.style.fontSize = '80px';
+                goalEl.style.color = '#ff0000';
+                goalEl.style.fontWeight = 'bold';
+                goalEl.style.textShadow = '0 0 20px rgba(255,0,0,0.8)';
+                goalEl.style.pointerEvents = 'none';
+                goalEl.style.zIndex = '50';
+                document.body.appendChild(goalEl);
+
+                // Slow puck down in net
+                game.puckVelocity.multiplyScalar(0.1);
+
+                setTimeout(() => {
+                  goalEl.remove();
+                  resetPuck();
+                }, 2000);
+             }
+           }
+
+           // Out of bounds
+           if (game.puck.position.z < -2000 || Math.abs(game.puck.position.x) > 1000) {
+              resetPuck();
+           }
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
