@@ -619,7 +619,7 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#020617');
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 20000);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 40000);
     camera.position.set(0, 1000, 2800);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -661,17 +661,92 @@
     };
 
     // Ice
-    const iceGeo = new THREE.PlaneGeometry(10000, 10000);
+    function createIceTexture() {
+      const canvas = document.createElement('canvas');
+      const scale = 2048 / 26000;
+      canvas.width = 2048;
+      canvas.height = Math.round(30000 * scale);
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const toX = (x) => (x + 13000) * scale;
+      const toY = (z) => (30000 + z) * scale; // Note: texture maps from top to bottom
+      const r = (radius) => radius * scale;
+
+      // Center Line (z=0)
+      ctx.strokeStyle = '#cf1f2e';
+      ctx.lineWidth = 30 * scale;
+      ctx.beginPath();
+      ctx.moveTo(0, toY(0));
+      ctx.lineTo(canvas.width, toY(0));
+      ctx.stroke();
+
+      // Center faceoff circle
+      ctx.strokeStyle = '#0033a0';
+      ctx.lineWidth = 20 * scale;
+      ctx.beginPath();
+      ctx.arc(toX(0), toY(0), r(4500), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#0033a0';
+      ctx.beginPath();
+      ctx.arc(toX(0), toY(0), r(300), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Blue Line (z=-10500)
+      ctx.strokeStyle = '#0033a0';
+      ctx.lineWidth = 60 * scale;
+      ctx.beginPath();
+      ctx.moveTo(0, toY(-10500));
+      ctx.lineTo(canvas.width, toY(-10500));
+      ctx.stroke();
+
+      // Goal Line (z=-26000)
+      ctx.strokeStyle = '#cf1f2e';
+      ctx.lineWidth = 20 * scale;
+      ctx.beginPath();
+      ctx.moveTo(0, toY(-26000));
+      ctx.lineTo(canvas.width, toY(-26000));
+      ctx.stroke();
+
+      // Faceoff circles
+      ctx.strokeStyle = '#cf1f2e';
+      ctx.lineWidth = 20 * scale;
+      ctx.beginPath(); ctx.arc(toX(-6700), toY(-20500), r(4500), 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(toX(6700), toY(-20500), r(4500), 0, Math.PI * 2); ctx.stroke();
+
+      ctx.fillStyle = '#cf1f2e';
+      ctx.beginPath(); ctx.arc(toX(-6700), toY(-20500), r(300), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(toX(6700), toY(-20500), r(300), 0, Math.PI * 2); ctx.fill();
+
+      // Goal Crease
+      ctx.fillStyle = 'rgba(0, 51, 160, 0.3)';
+      ctx.strokeStyle = '#cf1f2e';
+      ctx.lineWidth = 10 * scale;
+      ctx.beginPath();
+      ctx.arc(toX(0), toY(-26000), r(1800), 0, Math.PI);
+      ctx.fill();
+      ctx.stroke();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.anisotropy = 16;
+      return tex;
+    }
+
+    const rinkWidth = 26000;
+    const rinkDepth = 30000;
+    const iceGeo = new THREE.PlaneGeometry(rinkWidth, rinkDepth);
     const iceMat = new THREE.MeshStandardMaterial({
-      color: 0xcccccc,
-      roughness: 0.1,
-      metalness: 0.1,
-      transparent: true,
-      opacity: 0.8
+      color: 0xffffff,
+      map: createIceTexture(),
+      roughness: 0.05,
+      metalness: 0.1
     });
     game.ice = new THREE.Mesh(iceGeo, iceMat);
     game.ice.rotation.x = -Math.PI / 2;
     game.ice.position.y = 0;
+    game.ice.position.z = -15000; // Shift ice back so z=0 is center line, z=-30000 is far end
     scene.add(game.ice);
 
     // Puck
@@ -681,6 +756,73 @@
     // Position puck near where the blade normally ends up
     game.puck.position.set(0, 12.5, -80);
     scene.add(game.puck);
+
+    // --- SETUP BOARDING ---
+    const boardGroup = new THREE.Group();
+
+    const boardMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+    const kickPlateMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.5 }); // yellow
+    const topRailMat = new THREE.MeshStandardMaterial({ color: 0x0033a0, roughness: 0.3 }); // blue
+    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, opacity: 1, transparent: true, roughness: 0.1, ior: 1.5, side: THREE.DoubleSide });
+
+    const boardHeight = 1100;
+    const glassHeight = 2000;
+
+    // Far wall
+    const farWall = new THREE.Group();
+    const farBoard = new THREE.Mesh(new THREE.PlaneGeometry(rinkWidth, boardHeight), boardMat);
+    farBoard.position.y = boardHeight/2;
+    const farKick = new THREE.Mesh(new THREE.PlaneGeometry(rinkWidth, 200), kickPlateMat);
+    farKick.position.y = 100;
+    farKick.position.z = 5;
+    const farRail = new THREE.Mesh(new THREE.BoxGeometry(rinkWidth, 50, 100), topRailMat);
+    farRail.position.y = boardHeight;
+    const farGlass = new THREE.Mesh(new THREE.PlaneGeometry(rinkWidth, glassHeight), glassMat);
+    farGlass.position.y = boardHeight + glassHeight/2;
+    farWall.add(farBoard, farKick, farRail, farGlass);
+    farWall.position.z = -30000;
+    boardGroup.add(farWall);
+
+    // Left wall
+    const sideWallGeo = new THREE.PlaneGeometry(rinkDepth, boardHeight);
+    const sideKickGeo = new THREE.PlaneGeometry(rinkDepth, 200);
+    const sideGlassGeo = new THREE.PlaneGeometry(rinkDepth, glassHeight);
+    const sideRailGeo = new THREE.BoxGeometry(rinkDepth, 50, 100);
+
+    const leftWall = new THREE.Group();
+    const leftBoard = new THREE.Mesh(sideWallGeo, boardMat);
+    leftBoard.position.y = boardHeight/2;
+    const leftKick = new THREE.Mesh(sideKickGeo, kickPlateMat);
+    leftKick.position.y = 100;
+    leftKick.position.z = 5;
+    const leftRail = new THREE.Mesh(sideRailGeo, topRailMat);
+    leftRail.position.y = boardHeight;
+    const leftGlass = new THREE.Mesh(sideGlassGeo, glassMat);
+    leftGlass.position.y = boardHeight + glassHeight/2;
+    leftWall.add(leftBoard, leftKick, leftRail, leftGlass);
+    leftWall.rotation.y = Math.PI/2;
+    leftWall.position.x = -rinkWidth/2;
+    leftWall.position.z = -15000;
+    boardGroup.add(leftWall);
+
+    // Right wall
+    const rightWall = new THREE.Group();
+    const rightBoard = new THREE.Mesh(sideWallGeo, boardMat);
+    rightBoard.position.y = boardHeight/2;
+    const rightKick = new THREE.Mesh(sideKickGeo, kickPlateMat);
+    rightKick.position.y = 100;
+    rightKick.position.z = 5;
+    const rightRail = new THREE.Mesh(sideRailGeo, topRailMat);
+    rightRail.position.y = boardHeight;
+    const rightGlass = new THREE.Mesh(sideGlassGeo, glassMat);
+    rightGlass.position.y = boardHeight + glassHeight/2;
+    rightWall.add(rightBoard, rightKick, rightRail, rightGlass);
+    rightWall.rotation.y = -Math.PI/2;
+    rightWall.position.x = rinkWidth/2;
+    rightWall.position.z = -15000;
+    boardGroup.add(rightWall);
+
+    scene.add(boardGroup);
 
     // Net
     const netWidth = 1830;
@@ -706,8 +848,71 @@
     crossbar.position.set(0, netHeight, 0);
     game.net.add(crossbar);
 
-    // Net position - back on the ice
-    game.net.position.set(0, 0, -5600);
+    // Bottom and back framing
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const bottomGeo = new THREE.CylinderGeometry(20, 20, netDepth);
+    const leftBottom = new THREE.Mesh(bottomGeo, frameMat);
+    leftBottom.rotation.x = Math.PI / 2;
+    leftBottom.position.set(-netWidth/2, 20, -netDepth/2);
+    game.net.add(leftBottom);
+    const rightBottom = new THREE.Mesh(bottomGeo, frameMat);
+    rightBottom.rotation.x = Math.PI / 2;
+    rightBottom.position.set(netWidth/2, 20, -netDepth/2);
+    game.net.add(rightBottom);
+    const backBottomGeo = new THREE.CylinderGeometry(20, 20, netWidth);
+    const backBottom = new THREE.Mesh(backBottomGeo, frameMat);
+    backBottom.rotation.z = Math.PI / 2;
+    backBottom.position.set(0, 20, -netDepth);
+    game.net.add(backBottom);
+
+    // Netting Material
+    function createNettingTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        for(let i=0; i<=128; i+=16) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 128); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(128, i); ctx.stroke();
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(10, 6);
+        return tex;
+    }
+    const nettingMat = new THREE.MeshBasicMaterial({
+        map: createNettingTexture(),
+        transparent: true,
+        side: THREE.DoubleSide,
+        opacity: 0.7
+    });
+
+    // Netting planes
+    const backNet = new THREE.Mesh(new THREE.PlaneGeometry(netWidth, netHeight), nettingMat);
+    backNet.position.set(0, netHeight/2, -netDepth);
+    game.net.add(backNet);
+
+    const sideNetGeo = new THREE.PlaneGeometry(netDepth, netHeight);
+    const leftNet = new THREE.Mesh(sideNetGeo, nettingMat);
+    leftNet.rotation.y = Math.PI / 2;
+    leftNet.position.set(-netWidth/2, netHeight/2, -netDepth/2);
+    game.net.add(leftNet);
+
+    const rightNet = new THREE.Mesh(sideNetGeo, nettingMat);
+    rightNet.rotation.y = -Math.PI / 2;
+    rightNet.position.set(netWidth/2, netHeight/2, -netDepth/2);
+    game.net.add(rightNet);
+
+    const topNet = new THREE.Mesh(new THREE.PlaneGeometry(netWidth, netDepth), nettingMat);
+    topNet.rotation.x = Math.PI / 2;
+    topNet.position.set(0, netHeight, -netDepth/2);
+    game.net.add(topNet);
+
+    // Net position - back on the ice goal line
+    game.net.position.set(0, 0, -26000);
     scene.add(game.net);
 
     // Swipe Mechanics
@@ -1569,8 +1774,8 @@
 
         stickGroup = new THREE.Group();
         stickGroup.rotation.y = 0.22;
-        stickGroup.rotation.z = 0.28; // Tilt to the right so bottom blade sits flat on ice
-        stickGroup.position.y = 120;   // Adjust height so it barely rests on ice
+        stickGroup.rotation.z = 0.40; // Tilt to the right so bottom blade sits flat on ice
+        stickGroup.position.y = -20;   // Adjust height so it barely rests on ice
         stickGroup.add(root);
         scene.add(stickGroup);
 
@@ -1653,10 +1858,11 @@
            // Power is heavily influenced by swipe and stiffness profile (higher kick = more power)
            const powerMultiplier = swipePwr * stiffnessDynamics.powerScale;
 
-           const speedZ = (-6000 - (2000 * whip)) * powerMultiplier; // Fast in -Z towards net
-           const speedY = (300 + (600 * whip)) * powerMultiplier;  // Upwards lift
+           // Multiply speeds to accommodate the much larger 26m rink
+           const speedZ = (-20000 - (5000 * whip)) * powerMultiplier; // Fast in -Z towards net
+           const speedY = (1000 + (1200 * whip)) * powerMultiplier;  // Upwards lift
            // Accuracy directs the shot left/right. deviation * high multiplier
-           const speedX = swipeAcc * 6000;
+           const speedX = swipeAcc * 15000;
 
            game.puckVelocity.set(speedX, speedY, speedZ);
 
@@ -1668,7 +1874,7 @@
       // Puck Physics
       if (game.puckState === 'shot' || game.puckState === 'goal') {
         // Apply gravity
-        game.puckVelocity.y -= 980 * delta;
+        game.puckVelocity.y -= 3800 * delta; // Increased gravity so it falls faster on the big scale
 
         // Move puck
         game.puck.position.addScaledVector(game.puckVelocity, delta);
@@ -1679,6 +1885,16 @@
            game.puckVelocity.y = -game.puckVelocity.y * 0.3; // bounce
            game.puckVelocity.x *= 0.98; // friction
            game.puckVelocity.z *= 0.98;
+        }
+
+        // Boards collision
+        if (Math.abs(game.puck.position.x) > (rinkWidth / 2) - 38) {
+           game.puck.position.x = Math.sign(game.puck.position.x) * ((rinkWidth / 2) - 38);
+           game.puckVelocity.x *= -0.8;
+        }
+        if (game.puck.position.z < -30000 + 38) {
+           game.puck.position.z = -30000 + 38;
+           game.puckVelocity.z *= -0.8;
         }
 
         // Check Goal
