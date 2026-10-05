@@ -19,6 +19,7 @@
       background-color: #020617;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: #f8fafc;
+      touch-action: none;
     }
     #canvas-container {
       width: 100%;
@@ -417,7 +418,10 @@
     <div>Shots: <span id="shots-val">0</span></div>
   </div>
 
-  <button class="btn-shoot-main" id="btnShootMain" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #0284c7; color: white; border: none; padding: 16px 48px; border-radius: 30px; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.5); transition: transform 0.1s, background 0.15s; z-index: 20;">SHOOT</button>
+  <div id="swipeInstruction" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: bold; color: rgba(255,255,255,0.7); z-index: 10; pointer-events: none; text-align: center; background: rgba(0,0,0,0.5); padding: 12px 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);">
+    Swipe OMHOOG door de puck richting de goal!<br/>
+    <span style="font-size: 12px; color: #38bdf8;">Snelheid = Kracht | Rechte Lijn = Precisie</span>
+  </div>
 
   <!-- Floating Workbench Controls Panel -->
   <div class="workbench-panel collapsed" id="workbenchPanel">
@@ -611,7 +615,7 @@
     scene.background = new THREE.Color('#020617');
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 20000);
-    camera.position.set(0, 1000, 3000);
+    camera.position.set(0, 1000, 1200);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -624,6 +628,9 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.target.set(0, 500, -500);
+    controls.enableRotate = false;
+    controls.enablePan = false;
+    controls.enableZoom = false;
 
     // Lights
     const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
@@ -698,6 +705,83 @@
     game.net.position.set(0, 0, -1400);
     scene.add(game.net);
 
+    // Swipe Mechanics
+    let swipeData = {
+       isSwiping: false,
+       startY: 0,
+       startX: 0,
+       startTime: 0,
+       puckHitY: 0,
+       puckHitTime: 0,
+       endY: 0,
+       endX: 0,
+       endTime: 0,
+       power: 0, // speed
+       accuracy: 0, // deviation in X
+       triggered: false
+    };
+
+    container.addEventListener('pointerdown', (e) => {
+       if (game.puckState !== 'idle' || state.isPlaying) return;
+       swipeData.isSwiping = true;
+       swipeData.startY = e.clientY;
+       swipeData.startX = e.clientX;
+       swipeData.startTime = performance.now();
+       swipeData.triggered = false;
+       swipeData.puckHitTime = 0;
+    });
+
+    container.addEventListener('pointermove', (e) => {
+       if (!swipeData.isSwiping) return;
+       // Assuming puck is around 3/4 down the screen
+       const puckScreenY = window.innerHeight * 0.75;
+
+       if (swipeData.startY > puckScreenY && e.clientY <= puckScreenY && swipeData.puckHitTime === 0) {
+           swipeData.puckHitY = e.clientY;
+           swipeData.puckHitTime = performance.now();
+       }
+    });
+
+    container.addEventListener('pointerup', (e) => {
+       if (!swipeData.isSwiping) return;
+       swipeData.isSwiping = false;
+       swipeData.endY = e.clientY;
+       swipeData.endX = e.clientX;
+       swipeData.endTime = performance.now();
+
+       // Calculate swipe metrics if they swiped up (negative Y)
+       if (swipeData.startY - swipeData.endY > 100) {
+           // Calculate power based on first half (start to puck)
+           let timeToPuck = swipeData.puckHitTime > 0 ? (swipeData.puckHitTime - swipeData.startTime) : (swipeData.endTime - swipeData.startTime) / 2;
+           if (timeToPuck < 50) timeToPuck = 50; // Cap
+
+           // Distance to puck
+           let distToPuck = swipeData.puckHitY > 0 ? (swipeData.startY - swipeData.puckHitY) : (swipeData.startY - swipeData.endY) / 2;
+
+           // Speed = dist / time. Faster = more power.
+           let speed = distToPuck / timeToPuck;
+           // Normalize speed (e.g. 0.5 to 5.0) to 10-100%
+           swipeData.power = Math.max(10, Math.min(100, speed * 20));
+
+           // Accuracy based on straightness
+           // Deviation in X from start to end
+           let devX = swipeData.endX - swipeData.startX;
+           // Screen width percentage
+           swipeData.accuracy = (devX / window.innerWidth); // -0.5 to +0.5
+
+           // Apply to stick physics state
+           state.bottomGloveAmp = swipeData.power;
+           state.topHandAmp = swipeData.power;
+
+           // Trigger shot
+           swipeData.triggered = true;
+           state.isPlaying = true;
+           state.holdMaxBend = false;
+           syncUiFromState();
+       }
+    });
+    container.addEventListener('pointercancel', () => swipeData.isSwiping = false);
+
     // Physical markers (Fulcrum = amber, top hand = sky blue)
     function createMarker(colorHex) {
       const geom = new THREE.TorusGeometry(26, 4, 16, 32);
@@ -767,7 +851,10 @@
       const stiffnessBias = ((average - 87.5) / 37.5) * 0.08;
       const kickPositionBias = (kickPosition - 0.5) * 0.12;
       const timingScale = Math.max(0.84, Math.min(1.16, 1 + stiffnessBias + kickPositionBias));
-      const powerScale = Math.max(0.92, Math.min(1.08, 1 + ((average - 87.5) / 37.5) * 0.08));
+
+      // Update power scale logic per request: higher kickpoint (lower kickPosition y, higher kickPositionBias) = more power, but slower release.
+      // A faster release (timingScale < 1) produces less shot power.
+      const powerScale = Math.max(0.7, Math.min(1.5, 1 + ((average - 87.5) / 37.5) * 0.08 + kickPositionBias * 2.0));
 
       cachedStiffnessDynamics = { average, timingScale, powerScale };
       return cachedStiffnessDynamics;
@@ -1408,20 +1495,6 @@
       });
     });
 
-    const btnShootMain = document.getElementById('btnShootMain');
-    if (btnShootMain) {
-       btnShootMain.addEventListener('click', () => {
-          if (!state.isPlaying && game.puckState === 'idle') {
-             state.isPlaying = true;
-             state.holdMaxBend = false;
-             syncUiFromState();
-
-             // We need to sync the internal button as well if it exists
-             if (btnPlay) btnPlay.textContent = '❚❚ Pauze';
-          }
-       });
-    }
-
     const btnResetAll = document.getElementById('btnResetAll');
     if (btnResetAll) {
       btnResetAll.addEventListener('click', () => {
@@ -1548,20 +1621,30 @@
         // We trigger shot when timeline is around the peak release (600-700ms)
         // and blade is close to puck
         if (game.puckState === 'idle' && state.timeline > 650 && state.timeline < 800) {
-           // We can approximate stick blade pos using Z_center + profile.deltaZHosel
-           // from last physics update, but we don't store it globally.
-           // A simpler heuristic for this demo:
            game.puckState = 'shot';
            game.shots++;
            updateGameScore();
 
-           // Apply velocity based on state params
+           // Apply velocity based on state params, swipe power, accuracy, and stiffness profile
            const whip = state.bladeWhipStrength / 100;
-           const speedZ = -1500 - (500 * whip); // Fast in -Z towards net
-           const speedY = 200 + (300 * whip);  // Upwards lift
-           const speedX = (Math.random() - 0.5) * 400; // Slight random X
+           const stiffnessDynamics = getStiffnessDynamics();
+
+           // If swiped, use the calculated power and accuracy, otherwise fallback to defaults
+           const swipePwr = swipeData.triggered ? (swipeData.power / 100) : 0.8;
+           const swipeAcc = swipeData.triggered ? swipeData.accuracy : (Math.random() - 0.5) * 0.1;
+
+           // Power is heavily influenced by swipe and stiffness profile (higher kick = more power)
+           const powerMultiplier = swipePwr * stiffnessDynamics.powerScale;
+
+           const speedZ = (-2000 - (1000 * whip)) * powerMultiplier; // Fast in -Z towards net
+           const speedY = (200 + (400 * whip)) * powerMultiplier;  // Upwards lift
+           // Accuracy directs the shot left/right. deviation * high multiplier
+           const speedX = swipeAcc * 4000;
 
            game.puckVelocity.set(speedX, speedY, speedZ);
+
+           // Reset swipe triggered state
+           swipeData.triggered = false;
         }
       }
 
