@@ -399,39 +399,14 @@
   <div class="top-bar">
     <div class="badge-card">
       <h1>
-        <span>🏒</span> HockeystickPhysics_V2 Standalone
-        <span style="font-size: 9px; padding: 2px 6px; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 4px; color: #38bdf8;">WORKBENCH EDITIE</span>
+        <span>🏒</span> Hockey Game
       </h1>
-      <p>3D Carbon Model • Euler-Bernoulli Forehand Bow • Fulcrum Release vanaf 600 ms</p>
     </div>
 
     <div class="top-actions">
       <button class="btn-action" id="btnResetAll" title="Herstel standaardwaarden">
-        ↺ Herstel
+        ↺ Reset
       </button>
-      <a href="https://raw.githubusercontent.com/michieltw/GLB-s/main/glb_files_retextured/P28-ST.glb" download="HockeystickModel_P28.glb" target="_blank" class="btn-action" title="Download raw 3D GLB model">
-        📦 GLB Model
-      </a>
-    </div>
-  </div>
-
-  <!-- Live Physics Ticker -->
-  <div class="ticker-bar">
-    <div class="ticker-item">
-      <span class="ticker-label">Schot Fase:</span>
-      <span class="ticker-value" id="tickPhase">Opbouw (0-600 ms)</span>
-    </div>
-    <div class="ticker-item">
-      <span class="ticker-label">Schacht Buiging:</span>
-      <span class="ticker-value" id="tickBend">35.0°</span>
-    </div>
-    <div class="ticker-item">
-      <span class="ticker-label">Blad Verplaatsing:</span>
-      <span class="ticker-value" id="tickBlade">Op ijs (0 mm)</span>
-    </div>
-    <div class="ticker-item">
-      <span class="ticker-label">Tophand Trekking:</span>
-      <span class="ticker-value" id="tickTop">Gefixeerd</span>
     </div>
   </div>
 
@@ -442,8 +417,10 @@
     <div>Shots: <span id="shots-val">0</span></div>
   </div>
 
+  <button class="btn-shoot-main" id="btnShootMain" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: #0284c7; color: white; border: none; padding: 16px 48px; border-radius: 30px; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 25px rgba(2, 132, 199, 0.5); transition: transform 0.1s, background 0.15s; z-index: 20;">SHOOT</button>
+
   <!-- Floating Workbench Controls Panel -->
-  <div class="workbench-panel" id="workbenchPanel">
+  <div class="workbench-panel collapsed" id="workbenchPanel">
     <div class="panel-header" id="panelHeader">
       <h2>⚙ Physics Experiment Parameters</h2>
       <span id="collapseIcon" style="font-size: 11px; color: #94a3b8;">▼ Inklappen</span>
@@ -634,7 +611,7 @@
     scene.background = new THREE.Color('#020617');
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 20000);
-    camera.position.set(0, 700, 2600);
+    camera.position.set(0, 1000, 3000);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -646,7 +623,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(0, 600, 0);
+    controls.target.set(0, 500, -500);
 
     // Lights
     const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
@@ -686,22 +663,22 @@
     scene.add(game.ice);
 
     // Puck
-    const puckGeo = new THREE.CylinderGeometry(15, 15, 10, 32);
+    const puckGeo = new THREE.CylinderGeometry(38, 38, 25, 32);
     const puckMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
     game.puck = new THREE.Mesh(puckGeo, puckMat);
     // Position puck near where the blade normally ends up
-    game.puck.position.set(0, 5, -80);
+    game.puck.position.set(0, 12.5, -80);
     scene.add(game.puck);
 
     // Net
-    const netWidth = 300;
-    const netHeight = 200;
-    const netDepth = 100;
+    const netWidth = 1830;
+    const netHeight = 1220;
+    const netDepth = 1000;
     game.net = new THREE.Group();
 
     // Posts
     const postMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.3 });
-    const postGeo = new THREE.CylinderGeometry(5, 5, netHeight);
+    const postGeo = new THREE.CylinderGeometry(30, 30, netHeight);
 
     const leftPost = new THREE.Mesh(postGeo, postMat);
     leftPost.position.set(-netWidth/2, netHeight/2, 0);
@@ -711,14 +688,14 @@
     rightPost.position.set(netWidth/2, netHeight/2, 0);
     game.net.add(rightPost);
 
-    const crossbarGeo = new THREE.CylinderGeometry(5, 5, netWidth);
+    const crossbarGeo = new THREE.CylinderGeometry(30, 30, netWidth);
     const crossbar = new THREE.Mesh(crossbarGeo, postMat);
     crossbar.rotation.z = Math.PI / 2;
     crossbar.position.set(0, netHeight, 0);
     game.net.add(crossbar);
 
     // Net position - back on the ice
-    game.net.position.set(0, 0, -800);
+    game.net.position.set(0, 0, -1400);
     scene.add(game.net);
 
     // Physical markers (Fulcrum = amber, top hand = sky blue)
@@ -1151,33 +1128,6 @@
         thMarker.rotation.set(-d_th.theta, 0, 0);
       }
 
-      // Update Live Ticker
-      const tickPhase = document.getElementById('tickPhase');
-      const tickBend = document.getElementById('tickBend');
-      const tickBlade = document.getElementById('tickBlade');
-      const tickTop = document.getElementById('tickTop');
-
-      if (tickPhase) {
-        tickPhase.textContent = state.holdMaxBend
-          ? 'Piek (600 ms)'
-          : (isReleased ? '⚡ Release & Fulcrum' : 'Opbouw op ijs');
-        tickPhase.style.color = isReleased ? '#f59e0b' : '#38bdf8';
-      }
-      if (tickBend) {
-        tickBend.textContent = currentBendDeg.toFixed(1) + '°' + (isReleased ? ' (strekt)' : '');
-      }
-      if (tickBlade) {
-        tickBlade.textContent = isReleased
-          ? ('▲ +' + profile.deltaYHosel.toFixed(0) + 'mm | ◀ ' + profile.deltaZHosel.toFixed(0) + 'mm')
-          : 'Op het ijs (0 mm)';
-        tickBlade.style.color = isReleased ? '#10b981' : '#38bdf8';
-      }
-      if (tickTop) {
-        tickTop.textContent = isReleased
-          ? ('▼ -' + (topPullDownMm * pullProgress).toFixed(0) + 'mm (Fulcrum ' + state.bottomGlovePos + '%)')
-          : 'Gefixeerd (0 mm)';
-        tickTop.style.color = isReleased ? '#f59e0b' : '#38bdf8';
-      }
     }
 
     // Connect UI Elements
@@ -1458,6 +1408,20 @@
       });
     });
 
+    const btnShootMain = document.getElementById('btnShootMain');
+    if (btnShootMain) {
+       btnShootMain.addEventListener('click', () => {
+          if (!state.isPlaying && game.puckState === 'idle') {
+             state.isPlaying = true;
+             state.holdMaxBend = false;
+             syncUiFromState();
+
+             // We need to sync the internal button as well if it exists
+             if (btnPlay) btnPlay.textContent = '❚❚ Pauze';
+          }
+       });
+    }
+
     const btnResetAll = document.getElementById('btnResetAll');
     if (btnResetAll) {
       btnResetAll.addEventListener('click', () => {
@@ -1545,7 +1509,7 @@
     }
 
     function resetPuck() {
-      game.puck.position.set(0, 5, -80);
+      game.puck.position.set(0, 12.5, -80);
       game.puckVelocity.set(0, 0, 0);
       game.puckState = 'idle';
 
@@ -1610,8 +1574,8 @@
         game.puck.position.addScaledVector(game.puckVelocity, delta);
 
         // Floor collision
-        if (game.puck.position.y < 5) {
-           game.puck.position.y = 5;
+        if (game.puck.position.y < 12.5) {
+           game.puck.position.y = 12.5;
            game.puckVelocity.y = -game.puckVelocity.y * 0.3; // bounce
            game.puckVelocity.x *= 0.98; // friction
            game.puckVelocity.z *= 0.98;
@@ -1623,8 +1587,8 @@
            const netZ = game.net.position.z;
 
            // Simple AABB check for net
-           if (game.puck.position.z < netZ && game.puck.position.z > netZ - 100) {
-             if (Math.abs(game.puck.position.x - netX) < 150 && game.puck.position.y < 200) {
+           if (game.puck.position.z < netZ && game.puck.position.z > netZ - 1000) {
+             if (Math.abs(game.puck.position.x - netX) < (1830 / 2) && game.puck.position.y < 1220) {
                 game.puckState = 'goal';
                 game.score++;
                 updateGameScore();
