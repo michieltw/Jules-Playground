@@ -353,6 +353,68 @@
       color: #38bdf8;
     }
 
+    /* Main Menu */
+    #main-menu {
+      position: absolute;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.95);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      transition: opacity 0.3s ease;
+    }
+    #main-menu.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .menu-title {
+      font-size: 48px;
+      font-weight: 900;
+      color: #f8fafc;
+      text-shadow: 0 4px 16px rgba(56, 189, 248, 0.4);
+      margin-bottom: 40px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .menu-btn {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border: 1px solid #38bdf8;
+      color: #fff;
+      padding: 16px 48px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      width: 250px;
+      text-align: center;
+    }
+    .menu-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(2, 132, 199, 0.6);
+    }
+    .menu-btn.secondary {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: #475569;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .menu-btn.secondary:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: #94a3b8;
+    }
+
+    #game-ui {
+      display: none;
+    }
+    #game-ui.visible {
+      display: block;
+    }
+
     /* Loading overlay */
     #loading-overlay {
       position: absolute;
@@ -397,42 +459,56 @@
     <div style="font-size: 11px; color: #64748b;">Euler-Bernoulli Schachtflexie &amp; Fulcrum Release</div>
   </div>
 
-  <div class="top-bar">
-    <div class="badge-card">
-      <h1>
-        <span>🏒</span> Hockey Game
-      </h1>
-    </div>
-
-    <div class="top-actions">
-      <button class="btn-action" id="btnResetAll" title="Herstel standaardwaarden">
-        ↺ Reset
-      </button>
-    </div>
+  <div id="main-menu">
+    <div class="menu-title">Hockey Game</div>
+    <button class="menu-btn" id="btnPlayNow">Play Now</button>
+    <button class="menu-btn secondary" id="btnSettings">Settings</button>
   </div>
 
   <div id="canvas-container"></div>
 
-  <div id="score-overlay" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 32px; font-weight: bold; color: #fff; z-index: 10; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: flex; gap: 40px; pointer-events: none;">
-    <div>Score: <span id="score-val">0</span></div>
-    <div>Shots: <span id="shots-val">0</span></div>
-  </div>
+  <div id="game-ui">
+    <div class="top-bar">
+      <div class="badge-card">
+        <h1>
+          <span>🏒</span> Hockey Game
+        </h1>
+      </div>
 
-  <div id="swipeInstruction" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: bold; color: rgba(255,255,255,0.7); z-index: 10; pointer-events: none; text-align: center; background: rgba(0,0,0,0.5); padding: 12px 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);">
-    Swipe OMHOOG door de puck richting de goal!<br/>
-    <span style="font-size: 12px; color: #38bdf8;">Snelheid = Kracht | Rechte Lijn = Precisie</span>
-  </div>
+      <div class="top-actions">
+        <button class="btn-action" id="btnMenu" title="Hoofdmenu">
+          ☰ Menu
+        </button>
+        <button class="btn-action" id="btnResetAll" title="Herstel standaardwaarden">
+          ↺ Reset
+        </button>
+      </div>
+    </div>
 
-  <!-- Swipe Zone Element -->
-  <div id="swipeZone" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 25vh; z-index: 5; touch-action: none; background: linear-gradient(to top, rgba(56,189,248,0.1), transparent); border-top: 1px dashed rgba(56,189,248,0.3); pointer-events: auto; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20px; font-weight: bold; color: rgba(56,189,248,0.5); font-size: 14px;">
-    Start Swipe Hier
+    <div id="score-overlay" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 32px; font-weight: bold; color: #fff; z-index: 10; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); display: flex; gap: 40px; pointer-events: none;">
+      <div>Score: <span id="score-val">0</span></div>
+      <div>Shots: <span id="shots-val">0</span></div>
+    </div>
+
+    <div id="swipeInstruction" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); font-size: 16px; font-weight: bold; color: rgba(255,255,255,0.7); z-index: 10; pointer-events: none; text-align: center; background: rgba(0,0,0,0.5); padding: 12px 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);">
+      Swipe OMHOOG door de puck richting de goal!<br/>
+      <span style="font-size: 12px; color: #38bdf8;">Snelheid = Kracht | Rechte Lijn = Precisie</span>
+    </div>
+
+    <!-- Swipe Zone Element -->
+    <div id="swipeZone" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 25vh; z-index: 5; touch-action: none; background: linear-gradient(to top, rgba(56,189,248,0.1), transparent); border-top: 1px dashed rgba(56,189,248,0.3); pointer-events: auto; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20px; font-weight: bold; color: rgba(56,189,248,0.5); font-size: 14px;">
+      Start Swipe Hier
+    </div>
   </div>
 
   <!-- Floating Workbench Controls Panel -->
-  <div class="workbench-panel collapsed" id="workbenchPanel">
+  <div class="workbench-panel collapsed" style="display: none;" id="workbenchPanel">
     <div class="panel-header" id="panelHeader">
       <h2>⚙ Physics Experiment Parameters</h2>
-      <span id="collapseIcon" style="font-size: 11px; color: #94a3b8;">▼ Inklappen</span>
+      <div>
+        <button id="btnSettingsBack" style="background: none; border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; margin-right: 8px;">Back to Menu</button>
+        <span id="collapseIcon" style="font-size: 11px; color: #94a3b8;">▼ Inklappen</span>
+      </div>
     </div>
 
     <div class="panel-body">
@@ -606,7 +682,53 @@
       { y: 0.66, x: 0.5 },
       { y: 1, x: 0.5 }
     ];
+    let stickVelocityY = 0;
+    const appState = { mode: 'menu' }; // 'menu', 'game', 'settings'
     const state = {"bottomGlovePos":50,"bottomGloveAmp":100,"bottomGloveTimeframe":250,"topHandAmp":100,"topHandTimeframe":250,"maxBendAngle":45,"topHandPullStartMs":600,"topHandPullDownMm":100,"followThroughAngle":50,"bladeWhipStrength":100,"timeline":600,"isPlaying":false,"holdMaxBend":false,"bendAxis":"forwards","anchorMode":"bow","stiffnessCurve":DEFAULT_STIFFNESS_CURVE.map(point => ({ ...point }))};
+
+    function updateUiMode() {
+      const menu = document.getElementById('main-menu');
+      const gameUi = document.getElementById('game-ui');
+      const settings = document.getElementById('workbenchPanel');
+      const btnPlayNow = document.getElementById('btnPlayNow');
+
+      if (appState.mode === 'menu') {
+        menu.classList.remove('hidden');
+        gameUi.classList.remove('visible');
+        settings.style.display = 'none';
+        btnPlayNow.textContent = game && game.shots > 0 ? 'Resume Game' : 'Play Now';
+      } else if (appState.mode === 'game') {
+        menu.classList.add('hidden');
+        gameUi.classList.add('visible');
+        settings.style.display = 'none';
+      } else if (appState.mode === 'settings') {
+        menu.classList.add('hidden');
+        gameUi.classList.remove('visible');
+        settings.style.display = 'flex';
+        settings.classList.remove('collapsed');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btnPlayNow').addEventListener('click', () => {
+          appState.mode = 'game';
+          updateUiMode();
+        });
+        document.getElementById('btnSettings').addEventListener('click', () => {
+          appState.mode = 'settings';
+          updateUiMode();
+        });
+        document.getElementById('btnMenu').addEventListener('click', () => {
+          appState.mode = 'menu';
+          updateUiMode();
+        });
+        document.getElementById('btnSettingsBack').addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent panel collapse
+          appState.mode = 'menu';
+          updateUiMode();
+        });
+        updateUiMode();
+    });
 
     // Constants
     const L_total = 1400;
@@ -1774,8 +1896,8 @@
 
         stickGroup = new THREE.Group();
         stickGroup.rotation.y = 0.22;
-        stickGroup.rotation.z = 0.40; // Tilt to the right so bottom blade sits flat on ice
-        stickGroup.position.y = -20;   // Adjust height so it barely rests on ice
+        stickGroup.rotation.z = 0.40 + (20 * Math.PI / 180); // Tilt to the right so bottom blade sits flat on ice, + 20 extra degrees
+        stickGroup.position.y = 800;   // Initialize higher up for gravity test
         stickGroup.add(root);
         scene.add(stickGroup);
 
@@ -1823,6 +1945,23 @@
       const now = performance.now();
       const delta = Math.min(0.05, (now - lastTime) / 1000);
       lastTime = now;
+
+      // Stick Physics & Collider
+      if (stickGroup) {
+        stickVelocityY -= 3800 * delta; // Gravity
+        stickGroup.position.y += stickVelocityY * delta;
+
+        // Ensure matrices are up to date for accurate bounding box
+        stickGroup.updateMatrixWorld(true);
+        const stickBox = new THREE.Box3().setFromObject(stickGroup);
+
+        // Ice is at y=0, check if bottom of stick goes below
+        if (stickBox.min.y < 0) {
+           const penetration = 0 - stickBox.min.y;
+           stickGroup.position.y += penetration; // Push up to surface
+           stickVelocityY = 0; // Stop falling
+        }
+      }
 
       if (state.isPlaying && !state.holdMaxBend) {
         const stepRate = 800 * delta;
