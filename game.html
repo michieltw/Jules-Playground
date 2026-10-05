@@ -423,6 +423,11 @@
     <span style="font-size: 12px; color: #38bdf8;">Snelheid = Kracht | Rechte Lijn = Precisie</span>
   </div>
 
+  <!-- Swipe Zone Element -->
+  <div id="swipeZone" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 25vh; z-index: 5; touch-action: none; background: linear-gradient(to top, rgba(56,189,248,0.1), transparent); border-top: 1px dashed rgba(56,189,248,0.3); pointer-events: auto; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20px; font-weight: bold; color: rgba(56,189,248,0.5); font-size: 14px;">
+    Start Swipe Hier
+  </div>
+
   <!-- Floating Workbench Controls Panel -->
   <div class="workbench-panel collapsed" id="workbenchPanel">
     <div class="panel-header" id="panelHeader">
@@ -628,9 +633,9 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.target.set(0, 600, -200);
-    controls.enableRotate = false;
-    controls.enablePan = false;
-    controls.enableZoom = false;
+    controls.enableRotate = true;
+    controls.enablePan = true;
+    controls.enableZoom = true;
 
     // Lights
     const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
@@ -721,7 +726,9 @@
        triggered: false
     };
 
-    container.addEventListener('pointerdown', (e) => {
+    const swipeZone = document.getElementById('swipeZone');
+
+    swipeZone.addEventListener('pointerdown', (e) => {
        if (game.puckState !== 'idle' || state.isPlaying) return;
        swipeData.isSwiping = true;
        swipeData.startY = e.clientY;
@@ -729,6 +736,10 @@
        swipeData.startTime = performance.now();
        swipeData.triggered = false;
        swipeData.puckHitTime = 0;
+
+       // Disable OrbitControls during swipe so camera doesn't move while shooting
+       controls.enabled = false;
+       e.stopPropagation();
     });
 
     container.addEventListener('pointermove', (e) => {
@@ -742,9 +753,13 @@
        }
     });
 
-    container.addEventListener('pointerup', (e) => {
-       if (!swipeData.isSwiping) return;
+    window.addEventListener('pointerup', (e) => {
+       if (!swipeData.isSwiping) {
+           controls.enabled = true; // ensure controls re-enable
+           return;
+       }
        swipeData.isSwiping = false;
+       controls.enabled = true; // re-enable camera controls after swipe
        swipeData.endY = e.clientY;
        swipeData.endX = e.clientX;
        swipeData.endTime = performance.now();
@@ -1554,8 +1569,8 @@
 
         stickGroup = new THREE.Group();
         stickGroup.rotation.y = 0.22;
-        stickGroup.rotation.z = -0.4; // Tilt to the left
-        stickGroup.position.y = 520;  // Lift it up so the blade sits right on the ice
+        stickGroup.rotation.z = 0.28; // Tilt to the right so bottom blade sits flat on ice
+        stickGroup.position.y = 120;   // Adjust height so it barely rests on ice
         stickGroup.add(root);
         scene.add(stickGroup);
 
@@ -1638,10 +1653,10 @@
            // Power is heavily influenced by swipe and stiffness profile (higher kick = more power)
            const powerMultiplier = swipePwr * stiffnessDynamics.powerScale;
 
-           const speedZ = (-2000 - (1000 * whip)) * powerMultiplier; // Fast in -Z towards net
-           const speedY = (200 + (400 * whip)) * powerMultiplier;  // Upwards lift
+           const speedZ = (-6000 - (2000 * whip)) * powerMultiplier; // Fast in -Z towards net
+           const speedY = (300 + (600 * whip)) * powerMultiplier;  // Upwards lift
            // Accuracy directs the shot left/right. deviation * high multiplier
-           const speedX = swipeAcc * 4000;
+           const speedX = swipeAcc * 6000;
 
            game.puckVelocity.set(speedX, speedY, speedZ);
 
@@ -1704,7 +1719,7 @@
            }
 
            // Out of bounds
-           if (game.puck.position.z < -2000 || Math.abs(game.puck.position.x) > 1000) {
+           if (game.puck.position.z < -6500 || Math.abs(game.puck.position.x) > 2500) {
               resetPuck();
            }
         }
