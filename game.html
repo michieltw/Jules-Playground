@@ -738,7 +738,7 @@
 
     // Three.js Scene Setup
     const container = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
+    const scene = new THREE.Scene(); window.scene = scene; window.THREE = THREE;
     scene.background = new THREE.Color('#020617');
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 40000);
@@ -876,7 +876,7 @@
     const puckMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
     game.puck = new THREE.Mesh(puckGeo, puckMat);
     // Position puck near where the blade normally ends up
-    game.puck.position.set(0, 12.5, -80);
+    game.puck.position.set(95, 12.5, 76);
     scene.add(game.puck);
 
     // --- SETUP BOARDING ---
@@ -1544,6 +1544,8 @@
         }
         stickMesh.geometry.attributes.position.needsUpdate = true;
         stickMesh.geometry.computeVertexNormals();
+        stickMesh.geometry.computeBoundingBox();
+        stickMesh.geometry.computeBoundingSphere();
 
         // Update Markers
         const y_bg = (state.bottomGlovePos / 100) * L_total;
@@ -1926,7 +1928,7 @@
     }
 
     function resetPuck() {
-      game.puck.position.set(0, 12.5, -80);
+      game.puck.position.set(95, 12.5, 76);
       game.puckVelocity.set(0, 0, 0);
       game.puckState = 'idle';
 
@@ -1953,7 +1955,7 @@
 
         // Ensure matrices are up to date for accurate bounding box
         stickGroup.updateMatrixWorld(true);
-        const stickBox = new THREE.Box3().setFromObject(stickGroup);
+        const stickBox = new THREE.Box3().setFromObject(stickGroup, true);
 
         // Ice is at y=0, check if bottom of stick goes below
         if (stickBox.min.y < 0) {
