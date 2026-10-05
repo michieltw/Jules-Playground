@@ -615,7 +615,7 @@
     scene.background = new THREE.Color('#020617');
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 10, 20000);
-    camera.position.set(0, 1000, 1200);
+    camera.position.set(0, 1000, 2800);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -627,7 +627,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(0, 500, -500);
+    controls.target.set(0, 600, -200);
     controls.enableRotate = false;
     controls.enablePan = false;
     controls.enableZoom = false;
@@ -702,7 +702,7 @@
     game.net.add(crossbar);
 
     // Net position - back on the ice
-    game.net.position.set(0, 0, -1400);
+    game.net.position.set(0, 0, -5600);
     scene.add(game.net);
 
     // Swipe Mechanics
@@ -1554,6 +1554,8 @@
 
         stickGroup = new THREE.Group();
         stickGroup.rotation.y = 0.22;
+        stickGroup.rotation.z = -0.4; // Tilt to the left
+        stickGroup.position.y = 520;  // Lift it up so the blade sits right on the ice
         stickGroup.add(root);
         scene.add(stickGroup);
 
